@@ -1,0 +1,61 @@
+<?php
+/**
+ * @file
+ * Defines composed field types.
+ */
+
+/**
+ * Implements hook_field_info().
+ *
+ * Provides the description of the field.
+ */
+function composed_field_field_info() {
+  return array(
+    // We name our field as the associative name of the array.
+    'composed_field' => array(
+      'label' => t('Composed Field'),
+      'description' => t('This field stores serialized array in the database.'),
+      'default_widget' => 'composed_field_widget',
+      'default_formatter' => 'composed_field_formatter',
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_widget_info().
+ */
+function composed_field_field_widget_info() {
+  return array(
+    'composed_field_widget' => array(
+      'label' => t('Serialized Blob'),
+      'field types' => array('composed_field'),
+      // 'settings' => array('rows' => 5),
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_formatter_info().
+ *
+ * We need to tell Drupal that we have two different types of formatters
+ * for this field. One will change the text color, and the other will
+ * change the background color.
+ *
+ * @see field_example_field_formatter_view()
+ */
+function composed_field_field_formatter_info() {
+  return array(
+    // This formatter just displays the hex value in the color indicated.
+    'field_example_simple_text' => array(
+      'label' => t('Simple text-based formatter'),
+      'field types' => array('field_example_rgb'),
+    ),
+    // This formatter changes the background color of the content region.
+    'field_example_color_background' => array(
+      'label' => t('Change the background of the output text'),
+      'field types' => array('field_example_rgb'),
+    ),
+  );
+}
+
+

@@ -1,0 +1,4 @@
+name = Composed Field
+description = Defines composed field types
+package = Fields
+core = 7.x
