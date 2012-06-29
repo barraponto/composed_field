@@ -18,8 +18,5 @@ function composed_field_field_schema($field) {
         'serialize' => TRUE,
       ),
     ),
-    /*'indexes' => array(
-      'rgb' => array('rgb'),
-    ),*/
   );
 }
