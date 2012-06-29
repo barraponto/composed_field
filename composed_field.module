@@ -64,7 +64,8 @@ function composed_field_field_is_empty($item, $field) {
  * Implements hook_field_widget_settings_form().
  */
 function composed_field_field_widget_settings_form($field, $instance) {
-  // Array of previously saved setting values.
+  // Array of previously saved setting values, unless this field is being
+  // created.
   $default_values = $instance['widget']['settings'];
   $number_of_subfields_title = t('Number of subfields');
 
@@ -210,7 +211,48 @@ function _composed_field_number_of_fields_ajax_callback($form, $form_state) {
  *   Form element: _#type.
  */
 function _composed_field_type_ajax_callback($form, $form_state) {
-    
+  $submmited_values = $form_state['values']['instance']['widget']['settings'];
+  //$triggering_element = $form_state['triggering_element'];
+  
+  // The reason for using the array key 5 is because of this:
+  // [0] => instance
+  // [1] => widget
+  // [2] => settings
+  // [3] => composed_field
+  // [4] => _#type
+  // [5] => < THE SUBFIELD NUMBER >
+  // [6] => value.
+  //$subfield_number = $triggering_element['#parents'][5];
+  //$subfields_total = $submmited_values['number_of_subfields'];
+
+  $all_values_for_type_are_fullfilled = TRUE;
+  foreach($submmited_values['composed_field']['_#type'] as $subfield => $form_values) {
+    if (isset($form_values['value']) &&
+        empty($form_values['value'])) {
+      $all_values_for_type_are_fullfilled = FALSE;
+      // Having at least one subfield value for #type yet to be selected is
+      // enough to set FALSE for $all_values_for_type_are_fullfilled so we stop
+      // the looping.
+      break;
+    }
+  }
+
+  // We only want any action to be taken after all values in the #type tab
+  // are fulled up.  
+  if ($all_values_for_type_are_fullfilled) {
+
+    $file = "/tmp/test.txt";
+    // Open the file to get existing content
+    // $current = file_get_contents($file);
+    // Append a new person to the file
+    $current = print_r($submmited_values, TRUE);
+    // Write the contents back to the file
+    file_put_contents($file, $current);
+
+  }
+  else{
+    return;
+  }
 }
 
 /**
