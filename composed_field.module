@@ -76,15 +76,19 @@ function composed_field_field_widget_settings_form($field, $instance) {
     $number_of_subfields = 1;
     // State of the Widget Form elements.
     $disabled = TRUE;
-    // Single default value.
     $default_value = t('You must enter a value into !number_of_subfields', array('!number_of_subfields' => $number_of_subfields_title));
   }
   else {
     $number_of_subfields = $default_values['number_of_subfields'];
     // State of the Widget Form elements.
     $disabled = FALSE;
-    // Single default value.
     $default_value = '';
+  }
+
+  // Check if $instance['widget']['settings']['composed_field'] is set.
+  $default_values_for_type_are_set = FALSE;
+  if (isset($default_values['composed_field']['_#type'])) {
+    $default_values_for_type_are_set = TRUE;
   }
 
   $form['inline'] = array(
@@ -93,7 +97,7 @@ function composed_field_field_widget_settings_form($field, $instance) {
     '#default_value' => (empty($default_values['inline'])) ? FALSE : $default_values['inline'],
   );
 
-  // This element determines how many subfields our field will have.
+  // This element determines how many components our field will have.
   $form['number_of_subfields'] = array(
     '#type' => 'textfield',
     '#title' => $number_of_subfields_title,
@@ -130,18 +134,14 @@ function composed_field_field_widget_settings_form($field, $instance) {
         array('attributes' => array('target' => '_blank'))))
       ),
     );
-    
 
-    
+
     // Build the widget form in each tab.
     for ($subfield = 1;
          $subfield <= $number_of_subfields;
          $subfield++) {
 
-
       foreach($form_control_values['widget_form'] as $form_element => $form_element_properties) {
-
-
 
         $form_element_properties['#disabled'] = $disabled;
 
@@ -164,10 +164,9 @@ function composed_field_field_widget_settings_form($field, $instance) {
           );
         }
 
-
-        // Set default value for $instance['widget']['settings'].
+        // Get default value from $instance['widget']['settings'].
         $form_element_properties['#default_value'] = $default_value;
-        if (!empty($default_values['composed_field'][$form_control_attribute][$subfield][$form_element])) {
+        if ($default_values_for_type_are_set) {
           $form_element_properties['#default_value'] = $default_value = $default_values['composed_field'][$form_control_attribute][$subfield][$form_element];
         }
 
@@ -225,21 +224,11 @@ function _composed_field_type_ajax_callback($form, $form_state) {
   //$subfield_number = $triggering_element['#parents'][5];
   //$subfields_total = $submmited_values['number_of_subfields'];
 
-  $all_values_for_type_are_fullfilled = TRUE;
-  foreach($submmited_values['composed_field']['_#type'] as $subfield => $form_values) {
-    if (isset($form_values['value']) &&
-        empty($form_values['value'])) {
-      $all_values_for_type_are_fullfilled = FALSE;
-      // Having at least one subfield value for #type yet to be selected is
-      // enough to set FALSE for $all_values_for_type_are_fullfilled so we stop
-      // the looping.
-      break;
-    }
-  }
+  $default_values_for_type_are_set = _composed_field_default_values_for_type_are_set($submmited_values['composed_field']['_#type']);
 
   // We only want any action to be taken after all values in the #type tab
-  // are fulled up.  
-  if ($all_values_for_type_are_fullfilled) {
+  // are filled up.  
+  if ($default_values_for_type_are_set) {
 
     $file = "/tmp/test.txt";
     // Open the file to get existing content
@@ -254,6 +243,34 @@ function _composed_field_type_ajax_callback($form, $form_state) {
     return;
   }
 }
+
+/**
+ * Check if all values in the #type tab have been fullfilled.
+ *
+ * @param Array $type_submitted_values
+ *   The submitted values of the #type tab form.
+ *
+ * @return Boolean
+ *   Whether or not there is still any subfield value for #type left to be
+ *   selected.
+ */
+function _composed_field_default_values_for_type_are_set($type_submitted_values) {
+  $default_values_for_type_are_set = TRUE;
+
+  foreach($type_submitted_values as $subfield => $form_values) {
+    if (isset($form_values['value']) &&
+        empty($form_values['value'])) {
+      $default_values_for_type_are_set = FALSE;
+      // Having at least one subfield value for #type yet to be selected is
+      // enough to set FALSE for $default_values_for_type_are_set so we stop
+      // the looping.
+      break;
+    }
+  }
+
+  return $default_values_for_type_are_set;
+}
+
 
 /**
  * AJAX callback.

@@ -2,7 +2,8 @@
 /**
  * @file
  * Defines an associative array of Form Controls structure.
- * @see http://api.drupal.org/api/drupal/developer!topics!forms_api_reference.html/7
+ * @see
+ * http://api.drupal.org/api/drupal/developer!topics!forms_api_reference.html/7
  */
 
   $description_options = '<p>' . t('The possible values this field can contain. Enter one value per line, in the format key|label.');
