@@ -75,7 +75,7 @@ function composed_field_form_field_ui_field_edit_form_alter(&$form, &$form_state
     $widget_form_field_values = $form_state['values']['instance']['widget']['settings'];
 
     // Build the form elements in each tab.
-    $vertical_tab_settings = array(
+    $form_widget['#composed_field']['vertical_tab_settings'] = array(
       'subfield_start_from' => 1,
       'number_of_subfields' => $widget_form_field_values['number_of_subfields'],
       'widget_form_element_disabled' => FALSE,
@@ -84,7 +84,7 @@ function composed_field_form_field_ui_field_edit_form_alter(&$form, &$form_state
       'widget_form_field_values_are_set' => TRUE,
     );
 
-    _composed_field_build_form_controls_in_vertical_tab($form_widget, $vertical_tab_settings, $widget_form_field_values);
+    _composed_field_build_form_controls_in_vertical_tab($form_widget, $widget_form_field_values);
       
     // Return the updated form.
     $form['instance']['widget']['settings'] = $form_widget;
@@ -152,18 +152,20 @@ function composed_field_field_widget_settings_form($field, $instance) {
   );
 
   // Build the form elements in each tab.
-  $vertical_tab_settings = array(
-    'subfield_start_from' => 1,
-    'number_of_subfields' => $number_of_subfields,
-    'widget_form_element_disabled' => $widget_form_element_disabled,
-    'default_value' => $default_value,
-    'subfield_element_attribute_enabled' => FALSE,
-    'widget_form_field_values_are_set' => $widget_form_field_values_are_set,
+  $form['#composed_field'] = array(
+    'vertical_tab_settings' => array(
+      'subfield_start_from' => 1,
+      'number_of_subfields' => $number_of_subfields,
+      'widget_form_element_disabled' => $widget_form_element_disabled,
+      'default_value' => $default_value,
+      'subfield_element_attribute_enabled' => FALSE,
+      'widget_form_field_values_are_set' => $widget_form_field_values_are_set,
+    ),
+    'form_controls' => _composed_field_form_controls_api(),
   );
+  
 
-  $form['#composed_field']['form_controls'] = _composed_field_form_controls_api();
-
-  _composed_field_build_form_controls_in_vertical_tab($form, $vertical_tab_settings, $widget_form_field_values);
+  _composed_field_build_form_controls_in_vertical_tab($form, $widget_form_field_values);
   
   //'#default_value' => list_allowed_values_string(empty($settings[$subfield]['select']['allowed_values']) ? array() : $settings[$subfield]['select']['allowed_values']),
 
@@ -336,14 +338,21 @@ function _composed_field_form_controls_api() {
 }
 
 
-
-function _composed_field_build_form_controls_in_vertical_tab(&$form, $vertical_tab_settings, $widget_form_field_values) {
+/**
+ * Builds the vertical tabs.
+ *
+ * @param Array $form
+ *   The widget settings form.
+ * @param Array $widget_form_field_values
+ *   It is either the form saved values or the form submitted values.
+ */
+function _composed_field_build_form_controls_in_vertical_tab(&$form, $widget_form_field_values) {
 
   /*$file = "/tmp/test.txt";
   // Open the file to get existing content
   $current = file_get_contents($file);
   // Append a new person to the file
-  $current .= ' test' .print_r($form['#form_controls'], TRUE); // $tab . ' - ' . $subfield . "\n"; // print_r($tab, TRUE)
+  $current .= print_r($form['#form_controls'], TRUE);
   // Write the contents back to the file
   file_put_contents($file, $current);*/
 
@@ -366,39 +375,40 @@ function _composed_field_build_form_controls_in_vertical_tab(&$form, $vertical_t
       //'#prefix' => "<span id='composed_field_tab_$tab_name-ajax_wrapper'>",
       //'#suffix' => '</span>',
     );
-
-    $vertical_tab_settings['attribute_name'] = $attribute_name;
-    $vertical_tab_settings['tab_name'] = $tab_name;
    
+    $form['#composed_field']['vertical_tab_settings']['attribute_name'] = $attribute_name;
+    $form['#composed_field']['vertical_tab_settings']['tab_name'] = $tab_name;
     // Build the tab elements.
-    _composed_field_build_vertical_tab_elements($form, $vertical_tab_settings, $form_control_structure, $widget_form_field_values);
+    _composed_field_build_vertical_tab_elements($form, $widget_form_field_values, $form_control_structure);
   }
 }
 
 
 /**
+ * Populates each vertical tab with their form elements.
+ * 
  * @param Array $form
- *   Form array which is changed by reference.
- * @param Array $vertical_tab_settings
- *   (Int) $subfield_start_from
- *   (Int) $number_of_subfields
- *   (Bool) $widget_form_element_disabled
- *   (String) $default_value
- *   (String) $attribute_name
- *   (String) $tab_name
- *   (Bool) $subfield_element_attribute_enabled
- *   (Bool) $widget_form_field_values_are_set.
- * @param Array $form_control_structure
- *   The form structure for building each tab form elements.
+ *   The widget settings form.
  * @param Array $widget_form_field_values
- * 
- * 
+ *   It is either the form saved values or the form submitted values.
+ * @param Array $form_control_structure
+ *   The form element's structure.
  */
-function _composed_field_build_vertical_tab_elements(&$form, $vertical_tab_settings, $form_control_structure, $widget_form_field_values) {
-  foreach ($vertical_tab_settings as $setting_name => $setting_value) {
+function _composed_field_build_vertical_tab_elements(&$form, $widget_form_field_values, $form_control_structure) {
+  
+  /*$file = "/tmp/test.txt";
+  // Open the file to get existing content
+  $current = file_get_contents($file);
+  // Append a new person to the file
+  $current .= "$caller" . print_r($form['#composed_field']['vertical_tab_settings'], TRUE);
+  // Write the contents back to the file
+  file_put_contents($file, $current);*/
+
+  foreach ($form['#composed_field']['vertical_tab_settings'] as $setting_name => $setting_value) {
     ${$setting_name} = $setting_value;
   }
 
+  // Create as many form elements in each tab as there are subfields.
   for ($subfield = $subfield_start_from;
        $subfield <= $number_of_subfields;
        $subfield++) {
