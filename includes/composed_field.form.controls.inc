@@ -39,7 +39,7 @@
           ),
           '#required' => TRUE,
           '#ajax' => array(
-            'callback' => '_composed_field_type_ajax_callback',
+            'callback' => '_composed_field_vertical_tabs_ajax_callback',
           ),
         ),
       ),
@@ -108,25 +108,6 @@
       ),
       'supported_types' => array('checkboxes','radios','select','tableselect'),
     ),
-    /*'#default_value' => array(
-      'widget_form' => array(
-        '#type' => 'textfield',
-      ),
-      'supported_types' => array(
-        'checkbox',
-        'checkboxes',
-        'date',
-        'machine_name',
-        'radio',
-        'radios',
-        'select',
-        'tableselect',
-        'text_format',
-        'textarea',
-        'textfield',
-        'weight',
-      ),
-    ),*/
     '#prefix' => array(
       'widget_form' => array(
         'value' => array(
@@ -232,7 +213,27 @@
       ),
       'supported_types' => array('machine_name','textfield'),
     ),
-    
+    '#default_value' => array(
+      'widget_form' => array(
+        'value' => array(
+          '#type' => 'textfield',
+        ),
+      ),
+      'supported_types' => array(
+        'checkbox',
+        'checkboxes',
+        'date',
+        'machine_name',
+        'radio',
+        'radios',
+        'select',
+        'tableselect',
+        'text_format',
+        'textarea',
+        'textfield',
+        'weight',
+      ),
+    ),
     /*
     '#access' => array(
       'checkbox',
