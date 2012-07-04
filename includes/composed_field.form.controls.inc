@@ -97,7 +97,7 @@
     ),
     '#options' => array(
       'widget_form' => array(
-          'value' => array(
+        'value' => array(
           '#type' => 'textarea',
           '#title' => t('Allowed values list for '),
           //'#type' => 'text_format',

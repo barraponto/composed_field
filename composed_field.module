@@ -72,16 +72,12 @@ function composed_field_form_field_ui_field_edit_form_alter(&$form, &$form_state
       isset($form_state['values']['instance']['widget']['settings'])) {
 
     $form_widget = $form['instance']['widget']['settings'];
-    $widget_form_field_values = $form_state['values']['instance']['widget']['settings'];
+    $widget_form_state_values = $form_state['values']['instance']['widget']['settings'];
 
-    // Build the form elements in each tab.
-    $form_widget['#composed_field']['vertical_tab_settings'] = array(
-      'subfield_start_from' => 1,
-      'number_of_subfields' => $widget_form_field_values['number_of_subfields'],
-      'number_of_fields_not_set_message' => '',
-    );
+    $form_widget['#composed_field']['vertical_tab_settings']['number_of_subfields'] = $widget_form_state_values['number_of_subfields'];
+    $form_widget['#composed_field']['vertical_tab_settings']['number_of_fields_not_set_message'] = '';
 
-    _composed_field_build_form_controls_in_vertical_tabs($form_widget, $widget_form_field_values);
+    _composed_field_build_form_controls_in_vertical_tabs($form_widget, $widget_form_state_values);
       
     // Return the updated form.
     $form['instance']['widget']['settings'] = $form_widget;
@@ -92,26 +88,27 @@ function composed_field_form_field_ui_field_edit_form_alter(&$form, &$form_state
  * Implements hook_field_widget_settings_form().
  */
 function composed_field_field_widget_settings_form($field, $instance) {
-  $widget_form_field_values = $instance['widget']['settings'];
+  
+  $widget_form_state_values = $instance['widget']['settings'];
 
   $number_of_subfields_title = t('Number of subfields');
 
   // Assume there is no value set for number_of_subfields as yet.
   $number_of_fields_not_set_message = t('You must enter a value into !number_of_subfields', array('!number_of_subfields' => $number_of_subfields_title));
 
-  if (isset($widget_form_field_values['number_of_subfields'])) {
+  if (isset($widget_form_state_values['number_of_subfields'])) {
     // The field is being edited rather than created.
-    $number_of_subfields = $widget_form_field_values['number_of_subfields'];
+    $number_of_subfields = $widget_form_state_values['number_of_subfields'];
   }
   else {
-    $widget_form_field_values['number_of_subfields'] = '';
+    $widget_form_state_values['number_of_subfields'] = '';
     $number_of_subfields = 1;
   }
 
   $form['inline'] = array(
     '#type' => 'checkbox',
     '#title' => t('Display as inline element'),
-    '#default_value' => (empty($widget_form_field_values['inline'])) ? FALSE : $widget_form_field_values['inline'],
+    '#default_value' => (empty($widget_form_state_values['inline'])) ? FALSE : $widget_form_state_values['inline'],
   );
 
   // This element determines how many components our field will have.
@@ -120,7 +117,7 @@ function composed_field_field_widget_settings_form($field, $instance) {
     '#title' => $number_of_subfields_title,
     '#description' => t('Enter a numeric value and hit the tab key after that.') . '<br />' .
       t('This value determines how many subfields this field will have.'),
-    '#default_value' => $widget_form_field_values['number_of_subfields'],
+    '#default_value' => $widget_form_state_values['number_of_subfields'],
     '#maxlength' => 2,
     '#size' => 2,
     '#element_validate' => array('element_validate_integer_positive'),
@@ -146,7 +143,7 @@ function composed_field_field_widget_settings_form($field, $instance) {
     'form_controls' => _composed_field_form_controls_api(),
   );
   
-  _composed_field_build_form_controls_in_vertical_tabs($form, $widget_form_field_values);
+  _composed_field_build_form_controls_in_vertical_tabs($form, $widget_form_state_values);
   
   //'#default_value' => list_allowed_values_string(empty($settings[$subfield]['select']['allowed_values']) ? array() : $settings[$subfield]['select']['allowed_values']),
 
@@ -197,10 +194,10 @@ function _composed_field_form_controls_api() {
  *
  * @param Array $form
  *   The widget settings form.
- * @param Array $widget_form_field_values
+ * @param Array $widget_form_state_values
  *   It is either the form saved values or the form submitted values.
  */
-function _composed_field_build_form_controls_in_vertical_tabs(&$form, $widget_form_field_values) {
+function _composed_field_build_form_controls_in_vertical_tabs(&$form, $widget_form_state_values) {
 
   foreach($form['#composed_field']['form_controls'] as $attribute_name => $form_control_structure) {
 
@@ -225,7 +222,7 @@ function _composed_field_build_form_controls_in_vertical_tabs(&$form, $widget_fo
     $form['#composed_field']['vertical_tab_settings']['attribute_name'] = $attribute_name;
     $form['#composed_field']['vertical_tab_settings']['tab_name'] = $tab_name;
     // Build the tab elements.
-    _composed_field_build_vertical_tab_elements($form, $widget_form_field_values, $form_control_structure);
+    _composed_field_build_vertical_tab_elements($form, $widget_form_state_values, $form_control_structure);
   }
 }
 
@@ -234,12 +231,12 @@ function _composed_field_build_form_controls_in_vertical_tabs(&$form, $widget_fo
  * 
  * @param Array $form
  *   The widget settings form.
- * @param Array $widget_form_field_values
+ * @param Array $widget_form_state_values
  *   It is either the form saved values or the form submitted values.
  * @param Array $form_control_structure
  *   The form element's structure.
  */
-function _composed_field_build_vertical_tab_elements(&$form, $widget_form_field_values, $form_control_structure) {
+function _composed_field_build_vertical_tab_elements(&$form, $widget_form_state_values, $form_control_structure) {
 
   foreach ($form['#composed_field']['vertical_tab_settings'] as $setting_name => $setting_value) {
     ${$setting_name} = $setting_value;
@@ -258,88 +255,46 @@ function _composed_field_build_vertical_tab_elements(&$form, $widget_form_field_
       $title = (empty($form_element_properties['#title'])) ? '' : $form_element_properties['#title'];
       $form_element_properties['#title'] = $title . t('Subfield !subfield', array('!subfield' => $subfield));
 
-      // Current subfield settings.
-      $subfield_type_attribute_is_set = FALSE;
-      $subfield_this_attribute_is_available = FALSE;
-      $subfield_this_attribute_is_activated = FALSE;
-      $number_of_subfields_has_value = FALSE;
-      
-      // Settings for the current enable_this_attribute form element.
       $enable_this_attribute_element_is_not_available = TRUE;
+      $enable_this_attribute_element_value = FALSE;
 
       // Inicial state of all form elements in the vertical tab.
       $form_element_properties['#disabled'] = TRUE;
-      // Set a message advising the user to enter a value into
-      // number_of_subfields.
       $form_element_properties['#default_value'] = $number_of_fields_not_set_message;
+      $number_of_subfields_has_value = FALSE;
 
+      if (isset($widget_form_state_values['number_of_subfields']) &&
+          $widget_form_state_values['number_of_subfields'] > 0) {
 
-      if (isset($widget_form_field_values['number_of_subfields']) &&
-          $widget_form_field_values['number_of_subfields'] > 0) {
+        $form_element_properties['#default_value'] = '';
 
         $number_of_subfields_has_value = TRUE;
-      }
-      
-      // Determine if current subfield #type attribute has been set.
-      if (!empty($widget_form_field_values['composed_field']['type'][$subfield]['value'])) {
-        $subfield_type_attribute_is_set = TRUE;
-      }
+        
+        $selected_value_for_type_attribute = $widget_form_state_values['composed_field']['type'][$subfield]['value'];
 
-      // Determine if current subfield had been available for activation and
-      // if it is in fact activated.
-      if (isset($form['composed_field'][$tab_name][$subfield]['enable_this_attribute'])) {
-        if (!$form['composed_field'][$tab_name][$subfield]['enable_this_attribute']['#disabled']) {
-          $subfield_this_attribute_is_available = TRUE;
+        // 'enable_this_attribute' element.
+        if (in_array($selected_value_for_type_attribute, (array) $form_control_structure['supported_types'])) {
+
           $enable_this_attribute_element_is_not_available = FALSE;
+          if (isset($widget_form_state_values['composed_field'][$tab_name][$subfield]['enable_this_attribute'])) {
+            $enable_this_attribute_element_value = $widget_form_state_values['composed_field'][$tab_name][$subfield]['enable_this_attribute'];
+          }
         }
-        if ($widget_form_field_values['composed_field'][$tab_name][$subfield]['enable_this_attribute']) {
-          $subfield_this_attribute_is_activated = TRUE;
-        }
+        
       }
 
-      if ($number_of_subfields_has_value) {
-        $form_element_properties['#default_value'] = '';
-        if ($subfield_this_attribute_is_available) {
-          // Set the default value to the value preiously saved if any.
-          $form_element_properties['#default_value'] = $widget_form_field_values['composed_field'][$tab_name][$subfield][$form_element];
-        }
-      }
-
-      if ($subfield_type_attribute_is_set) {
-        $enable_this_attribute_element_is_not_available = FALSE;
-
-        $selected_value_for_type_attribute = $widget_form_field_values['composed_field']['type'][$subfield]['value'];
-
-        // Check if current form control attribute supportes the selected
-        // value on the corresponded subfield #type attribute.
-        if (!in_array($selected_value_for_type_attribute, $form_control_structure['supported_types'])) {
-          $enable_this_attribute_element_is_not_available = TRUE;
-        }
-
-        if ($subfield_this_attribute_is_activated) {
-          $form_element_properties['#disabled'] = FALSE;
-        }
-      }
-
-      if (isset($widget_form_field_values['composed_field'][$tab_name][$subfield]['enable_this_attribute']) &&
-          $widget_form_field_values['composed_field'][$tab_name][$subfield]['enable_this_attribute']) {
+      if ($enable_this_attribute_element_value) {
         $form_element_properties['#disabled'] = FALSE;
+        $form_element_properties['#default_value'] = $widget_form_state_values['composed_field'][$tab_name][$subfield][$form_element];
       }
-      
-      $file = "/tmp/test.txt";
-      // Open the file to get existing content
-      $current = file_get_contents($file);
-      // Append a new person to the file
-      //$current .= "$attribute_name - $subfield|" . print_r($widget_form_field_values['composed_field'][$tab_name][$subfield]['enable_this_attribute'], TRUE) . "\n";
-      // Write the contents back to the file
-      //file_put_contents($file, $current);
-      
+
       // Determine which tab are we in.
       switch($attribute_name) {
         case '#type':
           if ($number_of_subfields_has_value) {
             // Make all elements in the #type attribute tab selectable.
             $form_element_properties['#disabled'] = FALSE;
+            $form_element_properties['#default_value'] = $widget_form_state_values['composed_field'][$tab_name][$subfield][$form_element];
           }
           else {
             // Set a message advising the user to enter a value into
@@ -359,7 +314,7 @@ function _composed_field_build_vertical_tab_elements(&$form, $widget_form_field_
             '#type' => 'checkbox',
             '#title' => t('Enable !attribute attribute for Subfield !subfield.', array('!attribute' => $attribute_name, '!subfield' => $subfield)),
             '#disabled' => $enable_this_attribute_element_is_not_available,
-            '#default_value' => $subfield_this_attribute_is_activated,
+            '#default_value' => $enable_this_attribute_element_value,
             '#ajax' => array(
               'callback' => '_composed_field_vertical_tabs_ajax_callback',
             ),
