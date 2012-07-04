@@ -107,6 +107,7 @@
         ),
       ),
       'supported_types' => array('checkboxes','radios','select','tableselect'),
+      'value process' => array('_composed_field_list_allowed_values_array'),
     ),
     '#prefix' => array(
       'widget_form' => array(
@@ -212,27 +213,6 @@
         ),
       ),
       'supported_types' => array('machine_name','textfield'),
-    ),
-    '#default_value' => array(
-      'widget_form' => array(
-        'value' => array(
-          '#type' => 'textfield',
-        ),
-      ),
-      'supported_types' => array(
-        'checkbox',
-        'checkboxes',
-        'date',
-        'machine_name',
-        'radio',
-        'radios',
-        'select',
-        'tableselect',
-        'text_format',
-        'textarea',
-        'textfield',
-        'weight',
-      ),
     ),
     /*
     '#access' => array(
@@ -636,4 +616,29 @@
     '#js_select' => array('tableselect'),
     '#default_tab' => array('vertical_tabs'),
     '#delta' => array('weight'),*/
+
+    // This item must always sit at the end of this structure.
+    '#default_value' => array(
+      'widget_form' => array(
+        'value' => array(
+          // We initially set the form element type to textfield which will
+          // get updated to the user selected one on each ajax callback.
+          '#type' => 'textfield',
+        ),
+      ),
+      'supported_types' => array(
+        'checkbox',
+        'checkboxes',
+        'date',
+        'machine_name',
+        'radio',
+        'radios',
+        'select',
+        'tableselect',
+        'text_format',
+        'textarea',
+        'textfield',
+        'weight',
+      ),
+    ),
   );

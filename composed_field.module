@@ -205,18 +205,21 @@ function _composed_field_build_form_controls_in_vertical_tabs(&$form, $widget_fo
     // before the form control attribute name.
     $tab_name = str_replace('#', '', $attribute_name);
 
+    $description = t('See !form_controls for more details.',
+      array('!form_controls' => l(t('Form Controls'),
+      'http://api.drupal.org/api/drupal/developer!topics!forms_api_reference.html/7',
+      array('attributes' => array('target' => '_blank'))))
+    );
+
+    if ($tab_name == 'default_value') {
+      $description = t('The default value for this field, used when creating new content.');
+    }
+
     // Set a vertical tab for each form control attribute.
     $form['composed_field'][$tab_name] = array(
       '#title' => $attribute_name,
       '#type' => 'fieldset',
-      '#description' => t('See !form_controls for more details.',
-        array('!form_controls' => l(t('Form Controls'),
-        'http://api.drupal.org/api/drupal/developer!topics!forms_api_reference.html/7',
-        array('attributes' => array('target' => '_blank'))))
-      ),
-      '#attributes' => array('id' => array("composed_field_tab_$tab_name-ajax_wrapper")),
-      //'#prefix' => "<span id='composed_field_tab_$tab_name-ajax_wrapper'>",
-      //'#suffix' => '</span>',
+      '#description' => $description,
     );
    
     $form['#composed_field']['vertical_tab_settings']['attribute_name'] = $attribute_name;
@@ -306,19 +309,32 @@ function _composed_field_build_vertical_tab_elements(&$form, $widget_form_state_
 
         case '#default_value':
           if (!empty($selected_value_for_type_attribute)) {
-            //dcp('test');
+            // All attributes must at lest have the #type attribute.
             $form_element_properties = array(
               '#type' => $selected_value_for_type_attribute,
             );
 
             $form_control_attributes = array_keys($form['#composed_field']['form_controls']);
 
+            // Go through all attributes and check if a value has been entered
+            // for for each one of them.
             foreach($form_control_attributes as $form_control_attributes_name) {
               $form_control_tab_name = str_replace('#', '', $form_control_attributes_name);
-              
+
+              // Is there a value for this attribute?
               if (!empty($widget_form_state_values['composed_field'][$form_control_tab_name][$subfield][$form_element])) {
-                
-                $form_element_properties[$form_control_attributes_name] = $widget_form_state_values['composed_field'][$form_control_tab_name][$subfield][$form_element];
+                $value = $widget_form_state_values['composed_field'][$form_control_tab_name][$subfield][$form_element];
+
+                // Does it need to be processed before using it?
+                if (!empty($form['#composed_field']['form_controls'][$form_control_attributes_name]['value process'])) {
+                  $value_process = $form['#composed_field']['form_controls'][$form_control_attributes_name]['value process'];
+
+                  // Call each function sending the attribute value as argument.
+                  foreach($value_process as $function_name) {
+                    $value = $function_name($value);
+                  }
+                }
+                $form_element_properties[$form_control_attributes_name] = $value;
               }
             }
           }
@@ -342,4 +358,30 @@ function _composed_field_build_vertical_tab_elements(&$form, $widget_form_state_
   }
 }
 
+/**
+ * Returns the array of allowed values for a list field.
+ *
+ * @param String $value
+ *   The piped pair list of allowed values.
+ *
+ * @return Array
+ *   The array of allowed values. Keys of the array are the raw stored values
+ *   (number or text), values of the array are the display labels.
+ */
+function _composed_field_list_allowed_values_array($value) {
+  // Break the lines.
+  $array = explode("\n", $value);
+
+  // Break the pipes.
+  foreach($array as $key => $line) {
+    unset($array[$key]);
+
+    if (!empty($line)) {
+      $line = explode("|", $line);
+      $array[check_plain($line[0])] = check_plain($line[1]);
+    }
+  }
+
+  return $array;
+}
 
