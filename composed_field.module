@@ -78,10 +78,7 @@ function composed_field_form_field_ui_field_edit_form_alter(&$form, &$form_state
     $form_widget['#composed_field']['vertical_tab_settings'] = array(
       'subfield_start_from' => 1,
       'number_of_subfields' => $widget_form_field_values['number_of_subfields'],
-      'tab_element_is_disabled' => FALSE,
       'number_of_fields_not_set_message' => '',
-      'tab_value_element_is_enabled' => FALSE,
-      'widget_form_field_values_are_set' => TRUE,
     );
 
     _composed_field_build_form_controls_in_vertical_tabs($form_widget, $widget_form_field_values);
@@ -96,10 +93,6 @@ function composed_field_form_field_ui_field_edit_form_alter(&$form, &$form_state
  */
 function composed_field_field_widget_settings_form($field, $instance) {
   $widget_form_field_values = $instance['widget']['settings'];
-  // Assume this field is being created.
-  $widget_form_field_values_are_set = FALSE;
-  // All the elements start off disabled.
-  $tab_element_is_disabled = TRUE;
 
   $number_of_subfields_title = t('Number of subfields');
 
@@ -107,11 +100,8 @@ function composed_field_field_widget_settings_form($field, $instance) {
   $number_of_fields_not_set_message = t('You must enter a value into !number_of_subfields', array('!number_of_subfields' => $number_of_subfields_title));
 
   if (isset($widget_form_field_values['number_of_subfields'])) {
-    // This is not a field creationg.
+    // The field is being edited rather than created.
     $number_of_subfields = $widget_form_field_values['number_of_subfields'];
-    $widget_form_field_values_are_set = TRUE;
-    // All the elements start off enabled.
-    $tab_element_is_disabled = FALSE;
   }
   else {
     $widget_form_field_values['number_of_subfields'] = '';
@@ -151,10 +141,7 @@ function composed_field_field_widget_settings_form($field, $instance) {
     'vertical_tab_settings' => array(
       'subfield_start_from' => 1,
       'number_of_subfields' => $number_of_subfields,
-      'tab_element_is_disabled' => $tab_element_is_disabled,
       'number_of_fields_not_set_message' => $number_of_fields_not_set_message,
-      'tab_value_element_is_enabled' => FALSE,
-      'widget_form_field_values_are_set' => $widget_form_field_values_are_set,
     ),
     'form_controls' => _composed_field_form_controls_api(),
   );
@@ -197,7 +184,7 @@ function composed_field_field_widget_form(&$form, &$form_state, $field, $instanc
  * @see http://api.drupal.org/api/drupal/developer!topics!forms_api_reference.html/7
  *
  * @return Array
- *   Associative arraay of the form controls api structure.
+ *   Associative array of the form controls api structure.
  */
 function _composed_field_form_controls_api() {
   include_once('includes/composed_field.form.controls.inc');
@@ -253,14 +240,6 @@ function _composed_field_build_form_controls_in_vertical_tabs(&$form, $widget_fo
  *   The form element's structure.
  */
 function _composed_field_build_vertical_tab_elements(&$form, $widget_form_field_values, $form_control_structure) {
- 
-  /*$file = "/tmp/test.txt";
-  // Open the file to get existing content
-  $current = file_get_contents($file);
-  // Append a new person to the file
-  $current .= "$caller" . print_r($form['#composed_field']['vertical_tab_settings'], TRUE);
-  // Write the contents back to the file
-  file_put_contents($file, $current);*/
 
   foreach ($form['#composed_field']['vertical_tab_settings'] as $setting_name => $setting_value) {
     ${$setting_name} = $setting_value;
@@ -276,77 +255,115 @@ function _composed_field_build_vertical_tab_elements(&$form, $widget_form_field_
     );
  
     foreach($form_control_structure['widget_form'] as $form_element => $form_element_properties) {
-      // Inicial state of all form elements.
-      $form_element_properties['#disabled'] = $tab_element_is_disabled;
+      $title = (empty($form_element_properties['#title'])) ? '' : $form_element_properties['#title'];
+      $form_element_properties['#title'] = $title . t('Subfield !subfield', array('!subfield' => $subfield));
 
+      // Current subfield settings.
+      $subfield_type_attribute_is_set = FALSE;
+      $subfield_this_attribute_is_available = FALSE;
+      $subfield_this_attribute_is_activated = FALSE;
+      $number_of_subfields_has_value = FALSE;
+      
+      // Settings for the current enable_this_attribute form element.
+      $enable_this_attribute_element_is_not_available = TRUE;
+
+      // Inicial state of all form elements in the vertical tab.
+      $form_element_properties['#disabled'] = TRUE;
+      // Set a message advising the user to enter a value into
+      // number_of_subfields.
+      $form_element_properties['#default_value'] = $number_of_fields_not_set_message;
+
+
+      if (isset($widget_form_field_values['number_of_subfields']) &&
+          $widget_form_field_values['number_of_subfields'] > 0) {
+
+        $number_of_subfields_has_value = TRUE;
+      }
+      
+      // Determine if current subfield #type attribute has been set.
+      if (!empty($widget_form_field_values['composed_field']['type'][$subfield]['value'])) {
+        $subfield_type_attribute_is_set = TRUE;
+      }
+
+      // Determine if current subfield had been available for activation and
+      // if it is in fact activated.
+      if (isset($form['composed_field'][$tab_name][$subfield]['enable_this_attribute'])) {
+        if (!$form['composed_field'][$tab_name][$subfield]['enable_this_attribute']['#disabled']) {
+          $subfield_this_attribute_is_available = TRUE;
+          $enable_this_attribute_element_is_not_available = FALSE;
+        }
+        if ($widget_form_field_values['composed_field'][$tab_name][$subfield]['enable_this_attribute']) {
+          $subfield_this_attribute_is_activated = TRUE;
+        }
+      }
+
+      if ($number_of_subfields_has_value) {
+        $form_element_properties['#default_value'] = '';
+        if ($subfield_this_attribute_is_available) {
+          // Set the default value to the value preiously saved if any.
+          $form_element_properties['#default_value'] = $widget_form_field_values['composed_field'][$tab_name][$subfield][$form_element];
+        }
+      }
+
+      if ($subfield_type_attribute_is_set) {
+        $enable_this_attribute_element_is_not_available = FALSE;
+
+        $selected_value_for_type_attribute = $widget_form_field_values['composed_field']['type'][$subfield]['value'];
+
+        // Check if current form control attribute supportes the selected
+        // value on the corresponded subfield #type attribute.
+        if (!in_array($selected_value_for_type_attribute, $form_control_structure['supported_types'])) {
+          $enable_this_attribute_element_is_not_available = TRUE;
+        }
+
+        if ($subfield_this_attribute_is_activated) {
+          $form_element_properties['#disabled'] = FALSE;
+        }
+      }
+
+      if (isset($widget_form_field_values['composed_field'][$tab_name][$subfield]['enable_this_attribute']) &&
+          $widget_form_field_values['composed_field'][$tab_name][$subfield]['enable_this_attribute']) {
+        $form_element_properties['#disabled'] = FALSE;
+      }
+      
+      $file = "/tmp/test.txt";
+      // Open the file to get existing content
+      $current = file_get_contents($file);
+      // Append a new person to the file
+      //$current .= "$attribute_name - $subfield|" . print_r($widget_form_field_values['composed_field'][$tab_name][$subfield]['enable_this_attribute'], TRUE) . "\n";
+      // Write the contents back to the file
+      //file_put_contents($file, $current);
+      
+      // Determine which tab are we in.
       switch($attribute_name) {
         case '#type':
-          if ($tab_element_is_disabled) {
-            // The user hasn't entered a value into Number of subfields as yet.
+          if ($number_of_subfields_has_value) {
+            // Make all elements in the #type attribute tab selectable.
+            $form_element_properties['#disabled'] = FALSE;
+          }
+          else {
+            // Set a message advising the user to enter a value into
+            // number_of_subfields.
+            $form_element_properties['#default_value'] = '';
             $form_element_properties['#options'] = array('' => $number_of_fields_not_set_message);
           }
+
         break;
+
         case '#default_value':
-          // This is the last Form Control attribute in the tab list.
+
         break;
+
         default:
-          if ($widget_form_field_values_are_set) {
-            $tab_value_element_is_enabled = $widget_form_field_values['composed_field'][$tab_name][$subfield]['enabled'];
-          }
-          $form['composed_field'][$tab_name][$subfield]['enabled'] = array(
+          $form['composed_field'][$tab_name][$subfield]['enable_this_attribute'] = array(
             '#type' => 'checkbox',
             '#title' => t('Enable !attribute attribute for Subfield !subfield.', array('!attribute' => $attribute_name, '!subfield' => $subfield)),
-            '#disabled' => $tab_element_is_disabled,
-            '#default_value' => $tab_value_element_is_enabled,
+            '#disabled' => $enable_this_attribute_element_is_not_available,
+            '#default_value' => $subfield_this_attribute_is_activated,
             '#ajax' => array(
               'callback' => '_composed_field_vertical_tabs_ajax_callback',
             ),
           );
-      }
-
-      // Get default value from $instance['widget']['settings'].
-      $form_element_properties['#default_value'] = $number_of_fields_not_set_message;
-      if ($widget_form_field_values_are_set) {
-        $form_element_properties['#default_value'] = $widget_form_field_values['composed_field'][$tab_name][$subfield][$form_element];
-      }
-
-      // Check if this is the element that holds the form control property
-      // value.
-      if ($form_element == 'value') {
-        // Set title.
-        $title = (empty($form_element_properties['#title'])) ? '' : $form_element_properties['#title'];
-        $form_element_properties['#title'] = $title . t('Subfield !subfield', array('!subfield' => $subfield));
-        
-        if (!$tab_value_element_is_enabled && $attribute_name != '#type') {
-          $form_element_properties['#disabled'] = TRUE; 
-        }
-
-        // Make sure $number_of_fields_not_set_message is not left on
-        // #default_value.
-        if (isset($form['composed_field'][$tab_name][$subfield]['enabled']) &&
-            !$form['composed_field'][$tab_name][$subfield]['enabled']['#disabled'] &&
-            !$form['composed_field'][$tab_name][$subfield]['enabled']['#default_value']) {
-          $form_element_properties['#default_value'] = '';
-        }
-
-        // Check if #type element's values have been set.
-        if (!empty($widget_form_field_values['composed_field']['type'][$subfield]['value'])) {
-          
-          if ($tab_name != 'type') {
-
-            $selected_value_for_type = $widget_form_field_values['composed_field']['type'][$subfield]['value'];
-  
-            // Check if current form control attribute supportes the selected
-            // value on the corresponded subfield #type attribute.
-            if (!in_array($selected_value_for_type, $form_control_structure['supported_types'])) {
-              $form['composed_field'][$tab_name][$subfield]['enabled']['#disabled'] = TRUE;
-            }
-          }
-        }
-        else {
-          // The #type element value hasn't been selected.
-          $form['composed_field'][$tab_name][$subfield]['enabled']['#disabled'] = TRUE;
-        }
       }
 
       $form['composed_field'][$tab_name][$subfield][$form_element] = $form_element_properties;
