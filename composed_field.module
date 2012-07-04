@@ -280,7 +280,6 @@ function _composed_field_build_vertical_tab_elements(&$form, $widget_form_state_
             $enable_this_attribute_element_value = $widget_form_state_values['composed_field'][$tab_name][$subfield]['enable_this_attribute'];
           }
         }
-        
       }
 
       if ($enable_this_attribute_element_value) {
@@ -306,6 +305,23 @@ function _composed_field_build_vertical_tab_elements(&$form, $widget_form_state_
         break;
 
         case '#default_value':
+          if (!empty($selected_value_for_type_attribute)) {
+            //dcp('test');
+            $form_element_properties = array(
+              '#type' => $selected_value_for_type_attribute,
+            );
+
+            $form_control_attributes = array_keys($form['#composed_field']['form_controls']);
+
+            foreach($form_control_attributes as $form_control_attributes_name) {
+              $form_control_tab_name = str_replace('#', '', $form_control_attributes_name);
+              
+              if (!empty($widget_form_state_values['composed_field'][$form_control_tab_name][$subfield][$form_element])) {
+                
+                $form_element_properties[$form_control_attributes_name] = $widget_form_state_values['composed_field'][$form_control_tab_name][$subfield][$form_element];
+              }
+            }
+          }
 
         break;
 
