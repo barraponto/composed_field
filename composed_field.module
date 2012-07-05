@@ -140,7 +140,6 @@ function composed_field_field_widget_settings_form($field, $instance) {
       'number_of_subfields' => $number_of_subfields,
       'number_of_fields_not_set_message' => $number_of_fields_not_set_message,
     ),
-    'form_controls' => _composed_field_form_controls_api(),
   );
   
   _composed_field_build_form_controls_in_vertical_tabs($form, $widget_form_state_values);
@@ -168,29 +167,108 @@ function _composed_field_vertical_tabs_ajax_callback($form, $form_state) {
  * Implements hook_field_widget_form().
  */
 function composed_field_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
+  $settings = $instance['widget']['settings'];
+  $number_of_subfields = (isset($settings['number_of_subfields'])) ? $settings['number_of_subfields'] : 1;
+  $element['composed_field']['#theme_wrappers'] = array('form_element');
+  
+  // Create as many form elements in each tab as there are subfields.
+  for ($subfield = 1;
+       $subfield <= $number_of_subfields;
+       $subfield++) {
 
+    $element['composed_field'][$subfield] = _composed_field_build_subfield_element($settings, $subfield);
+  }
 
+  if (isset($settings['inline']) &&
+      $settings['inline']) {
+    $prefix = (isset($element['composed_field'][1]['#prefix'])) ? $element['composed_field'][1]['#prefix'] : '';
+    $suffix = (isset($element['composed_field'][$number_of_subfields]['#suffix'])) ? $element['composed_field'][$number_of_subfields]['#suffix'] : '';
+    
+    $element['composed_field'][1]['#prefix']  = '<div class="container-inline">' . $prefix;
+    $element['composed_field'][$number_of_subfields]['#suffix'] = $suffix . '</div>';
+  }
 
   return $element;
 }
 
+/**
+ * Implements hook_field_presave().
+ *
+ * Lumps all the subfield values into an serialized array so it gets saved
+ * as a single field value into the database.
+ */
+function composed_field_field_presave($entity_type, $entity, $field, $instance, $langcode, &$items) {
+  /*if ($field['type'] == 'number_decimal') {
+    // Let PHP round the value to ensure consistent behavior across storage
+    // backends.
+    foreach ($items as $delta => $item) {
+      if (isset($item['value'])) {
+        $items[$delta]['value'] = round($item['value'], $field['settings']['scale']);
+      }
+    }
+  }*/
+}
 
 /**
- * Form Control Attributes.
+ * Builds the form element for each subfield.
+ *
+ * @param Array $settings
+ *   Field widget settings.
+ * @param Int $subfield
+ *   The subfield sequence number.
+ * @param String $form_control_element
+ *   The array key under widget_form array in $form_control.
+ * @return Array
+ *   The subfield form element.
+ */
+function _composed_field_build_subfield_element($settings, $subfield, $form_control_element = 'value') {
+  $form_controls = _composed_field_form_controls_api();
+  $form_control_attributes = array_keys($form_controls);
+
+  $element = array();
+  
+  // Go through all attributes and check if a setting value has been entered
+  // in each one of them.
+  foreach($form_control_attributes as $form_control_attributes_name) {
+
+    $form_control_tab_name = str_replace('#', '', $form_control_attributes_name);
+
+    // Is there a value for this attribute?
+    if (!empty($settings['composed_field'][$form_control_tab_name][$subfield][$form_control_element])) {
+      $value = $settings['composed_field'][$form_control_tab_name][$subfield][$form_control_element];
+
+      // Does it need to be processed before using it?
+      if (!empty($form_controls[$form_control_attributes_name]['value process'])) {
+        $process_functions = $form_controls[$form_control_attributes_name]['value process'];
+
+        // Call each function sending the attribute value as argument.
+        foreach($process_functions as $function_name) {
+          $value = $function_name($value);
+        }
+      }
+      $element[$form_control_attributes_name] = $value;
+    }
+  }
+
+  return $element; 
+}
+
+/**
+ * Returns the Form Control Attributes.
  *
  * @see http://api.drupal.org/api/drupal/developer!topics!forms_api_reference.html/7
  *
  * @return Array
- *   Associative array of the form controls api structure.
+ *   Associative array of the form control's api structure.
  */
 function _composed_field_form_controls_api() {
-  include_once('includes/composed_field.form.controls.inc');
+  include('includes/composed_field.form.controls.inc');
   return $form_controls;
 }
 
 
 /**
- * Builds the vertical tabs.
+ * Builds the widget form vertical tabs.
  *
  * @param Array $form
  *   The widget settings form.
@@ -199,10 +277,10 @@ function _composed_field_form_controls_api() {
  */
 function _composed_field_build_form_controls_in_vertical_tabs(&$form, $widget_form_state_values) {
 
-  foreach($form['#composed_field']['form_controls'] as $attribute_name => $form_control_structure) {
+  foreach(_composed_field_form_controls_api() as $attribute_name => $form_control_structure) {
 
-    // The Form API wont allow form element names starting with #, so we add a _
-    // before the form control attribute name.
+    // The Form API wont allow form element name starting with #, so we remove
+    // it.
     $tab_name = str_replace('#', '', $attribute_name);
 
     $description = t('See !form_controls for more details.',
@@ -230,7 +308,7 @@ function _composed_field_build_form_controls_in_vertical_tabs(&$form, $widget_fo
 }
 
 /**
- * Populates each vertical tab with their form elements.
+ * Populates each widget form vertical tab with their form elements.
  * 
  * @param Array $form
  *   The widget settings form.
@@ -244,6 +322,8 @@ function _composed_field_build_vertical_tab_elements(&$form, $widget_form_state_
   foreach ($form['#composed_field']['vertical_tab_settings'] as $setting_name => $setting_value) {
     ${$setting_name} = $setting_value;
   }
+
+  $form_controls = _composed_field_form_controls_api();
 
   // Create as many form elements in each tab as there are subfields.
   for ($subfield = $subfield_start_from;
@@ -309,34 +389,7 @@ function _composed_field_build_vertical_tab_elements(&$form, $widget_form_state_
 
         case '#default_value':
           if (!empty($selected_value_for_type_attribute)) {
-            // All attributes must at lest have the #type attribute.
-            $form_element_properties = array(
-              '#type' => $selected_value_for_type_attribute,
-            );
-
-            $form_control_attributes = array_keys($form['#composed_field']['form_controls']);
-
-            // Go through all attributes and check if a value has been entered
-            // for for each one of them.
-            foreach($form_control_attributes as $form_control_attributes_name) {
-              $form_control_tab_name = str_replace('#', '', $form_control_attributes_name);
-
-              // Is there a value for this attribute?
-              if (!empty($widget_form_state_values['composed_field'][$form_control_tab_name][$subfield][$form_element])) {
-                $value = $widget_form_state_values['composed_field'][$form_control_tab_name][$subfield][$form_element];
-
-                // Does it need to be processed before using it?
-                if (!empty($form['#composed_field']['form_controls'][$form_control_attributes_name]['value process'])) {
-                  $value_process = $form['#composed_field']['form_controls'][$form_control_attributes_name]['value process'];
-
-                  // Call each function sending the attribute value as argument.
-                  foreach($value_process as $function_name) {
-                    $value = $function_name($value);
-                  }
-                }
-                $form_element_properties[$form_control_attributes_name] = $value;
-              }
-            }
+            $form_element_properties = _composed_field_build_subfield_element($widget_form_state_values, $subfield, $form_element);
           }
 
         break;
@@ -359,7 +412,7 @@ function _composed_field_build_vertical_tab_elements(&$form, $widget_form_state_
 }
 
 /**
- * Returns the array of allowed values for a list field.
+ * Returns an array of allowed values for a list field.
  *
  * @param String $value
  *   The piped pair list of allowed values.
@@ -384,4 +437,3 @@ function _composed_field_list_allowed_values_array($value) {
 
   return $array;
 }
-
