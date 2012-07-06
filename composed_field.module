@@ -14,7 +14,7 @@ function composed_field_field_info() {
       'label' => t('Composed field'),
       'description' => t('This field stores serialized array in the database.'),
       'default_widget' => 'composed_field_widget',
-      'default_formatter' => 'composed_field_formatter',
+      'default_formatter' => 'composed_field_unformatted_list',
     ),
   );
 }
@@ -25,20 +25,6 @@ function composed_field_field_info() {
 function composed_field_field_widget_info() {
   return array(
     'composed_field_widget' => array(
-      'label' => t('Composed field'),
-      'field types' => array('composed_field'),
-      // 'settings' => array('rows' => 5),
-    ),
-  );
-}
-
-/**
- * Implements hook_field_formatter_info().
- */
-function composed_field_field_formatter_info() {
-  return array(
-    // This formatter just displays the hex value in the color indicated.
-    'composed_field_formatter' => array(
       'label' => t('Composed field'),
       'field types' => array('composed_field'),
     ),
@@ -57,7 +43,6 @@ function composed_field_field_is_empty($item, $field) {
   
   // TODO:
   return FALSE;
-  
 }
 
 /**
@@ -75,7 +60,6 @@ function composed_field_form_field_ui_field_edit_form_alter(&$form, &$form_state
     $widget_form_state_values = $form_state['values']['instance']['widget']['settings'];
 
     $form_widget['#composed_field']['vertical_tab_settings']['number_of_subfields'] = $widget_form_state_values['number_of_subfields'];
-    $form_widget['#composed_field']['vertical_tab_settings']['number_of_fields_not_set_message'] = '';
 
     _composed_field_build_form_controls_in_vertical_tabs($form_widget, $widget_form_state_values);
       
@@ -144,8 +128,6 @@ function composed_field_field_widget_settings_form($field, $instance) {
   
   _composed_field_build_form_controls_in_vertical_tabs($form, $widget_form_state_values);
   
-  //'#default_value' => list_allowed_values_string(empty($settings[$subfield]['select']['allowed_values']) ? array() : $settings[$subfield]['select']['allowed_values']),
-
   return $form;
 }
 
@@ -169,23 +151,23 @@ function _composed_field_vertical_tabs_ajax_callback($form, $form_state) {
 function composed_field_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
   $settings = $instance['widget']['settings'];
   $number_of_subfields = (isset($settings['number_of_subfields'])) ? $settings['number_of_subfields'] : 1;
-  $element['composed_field']['#theme_wrappers'] = array('form_element');
+  $element['composed']['#theme_wrappers'] = array('form_element');
   
   // Create as many form elements in each tab as there are subfields.
   for ($subfield = 1;
        $subfield <= $number_of_subfields;
        $subfield++) {
 
-    $element['composed_field'][$subfield] = _composed_field_build_subfield_element($settings, $subfield);
+    $element['composed'][$subfield] = _composed_field_build_subfield_element($settings, $subfield);
   }
 
   if (isset($settings['inline']) &&
       $settings['inline']) {
-    $prefix = (isset($element['composed_field'][1]['#prefix'])) ? $element['composed_field'][1]['#prefix'] : '';
-    $suffix = (isset($element['composed_field'][$number_of_subfields]['#suffix'])) ? $element['composed_field'][$number_of_subfields]['#suffix'] : '';
+    $prefix = (isset($element['composed'][1]['#prefix'])) ? $element['composed'][1]['#prefix'] : '';
+    $suffix = (isset($element['composed'][$number_of_subfields]['#suffix'])) ? $element['composed'][$number_of_subfields]['#suffix'] : '';
     
-    $element['composed_field'][1]['#prefix']  = '<div class="container-inline">' . $prefix;
-    $element['composed_field'][$number_of_subfields]['#suffix'] = $suffix . '</div>';
+    $element['composed'][1]['#prefix']  = '<div class="container-inline">' . $prefix;
+    $element['composed'][$number_of_subfields]['#suffix'] = $suffix . '</div>';
   }
 
   return $element;
@@ -198,15 +180,13 @@ function composed_field_field_widget_form(&$form, &$form_state, $field, $instanc
  * as a single field value into the database.
  */
 function composed_field_field_presave($entity_type, $entity, $field, $instance, $langcode, &$items) {
-  /*if ($field['type'] == 'number_decimal') {
-    // Let PHP round the value to ensure consistent behavior across storage
-    // backends.
+  if ($field['type'] == 'composed_field') {
     foreach ($items as $delta => $item) {
-      if (isset($item['value'])) {
-        $items[$delta]['value'] = round($item['value'], $field['settings']['scale']);
+      if (isset($item['composed'])) {
+        $items[$delta]['composed'] = serialize($item['composed']);
       }
     }
-  }*/
+  }
 }
 
 /**
@@ -436,4 +416,541 @@ function _composed_field_list_allowed_values_array($value) {
   }
 
   return $array;
+}
+
+
+/**
+ * Implements hook_field_formatter_info().
+ */
+function composed_field_field_formatter_info() {
+
+  $settings['display_options'] = array(
+    'hidden' => 0,
+    'format' => '_none',
+    'prefix' => '',
+    'suffix' => '',
+  );
+
+  return array(
+    'composed_field_unformatted_list' => array(
+      'label' => t('Unformatted list'),
+      'field types' => array('composed_field'),
+      'settings' => $settings + array('style' => 'inline'),
+    ),
+    'composed_field_fieldset' => array(
+      'label' => t('Fieldset'),
+      'field types' => array('composed_field'),
+      'settings' => $settings + array('collapsible' => TRUE, 'collapsed' => FALSE),
+    ),
+    'composed_field_html_list' => array(
+      'label' => t('HTML list'),
+      'field types' => array('composed_field'),
+      'settings' => $settings + array('style' => 'inline', 'list_type' => 'ul'),
+    ),
+    'composed_field_table' => array(
+      'label' => t('Table'),
+      'field types' => array('composed_field'),
+      'settings' => $settings + array(
+        'table' => array(
+          'number_column' => FALSE,
+          'number_column_label' => '№',
+          'column_label' => '',
+        ),
+      ),
+    ),
+    'composed_field_accordion' => array(
+      'label' => t('Accordion'),
+      'field types' => array('composed_field'),
+      'settings' => $settings,
+    ),
+    'composed_field_tabs' => array(
+      'label' => t('Tabs'),
+      'field types' => array('composed_field'),
+      'settings' => $settings,
+    ),
+    'composed_field_dialog' => array(
+      'label' => t('Dialog'),
+      'field types' => array('composed_field'),
+      'settings' => $settings,
+    ),
+  );
+}
+
+function composed_field_field_formatter_settings_form_submit() {
+  //dcp('test-submit');
+}
+
+
+/**
+ * Implements hook_field_formatter_settings_form().
+ */
+function composed_field_field_formatter_settings_form($field, $instance, $view_mode, $form, &$form_state) {
+  $settings = $instance['display'][$view_mode]['settings'];
+  $element = array(
+    '#tree' => TRUE,
+    '#submit' => array('composed_field_field_formatter_settings_form_submit'),
+  );
+
+  $widget_settings = $instance['widget']['settings'];  
+  $number_of_subfields = $widget_settings['number_of_subfields'];
+
+  $style_settings = array(
+    '#type' => 'select',
+    '#title' => t('Style'),
+    '#options' => array(
+      'inline' => t('Inline'),
+      'block' => t('Block'),
+    ),
+    '#default_value' => $settings['style'],
+  );
+
+  switch ($instance['display'][$view_mode]['type']) {
+    case 'composed_field_fieldset':
+      $element['collapsible'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Collapsible'),
+        '#default_value' => $settings['collapsible'],
+      );
+      $element['collapsed'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Collapsed'),
+        '#default_value' => $settings['collapsed'],
+      );
+      break;
+
+    case 'composed_field_unformatted_list':
+      $element['style'] = $style_settings;
+      break;
+
+    case 'composed_field_html_list':
+      $element['style'] = $style_settings;
+      $element['list_type'] = array(
+        '#type' => 'radios',
+        '#title' => t('List type'),
+        '#options' => array('ul' => t('Unordered list'), 'ol' => t('Ordered list')),
+        '#default_value' => $settings['list_type'],
+      );
+      break;
+
+    case 'composed_field_table':
+      $element['table'] = array(
+        '#title' => t('Table'),
+        '#type' => 'fieldset',
+        '#collapsible' => TRUE,
+        '#collapsed' => TRUE,
+      );
+      $element['table']['number_column'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Enable row number column'),
+        '#default_value' => $settings['table']['number_column'],
+        '#attributes' => array('id' => 'number_column'),
+      );
+      $element['table']['number_column_label'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Number column label'),
+        '#size' => 30,
+        '#default_value' => $settings['table']['number_column_label'],
+        '#states' => array(
+          'visible' => array(
+            '#number_column' => array('checked' => TRUE),
+          ),
+        ),
+      );
+
+      $column_label = unserialize($settings['table']['column_label']);
+
+      for ($subfield = 1;
+           $subfield <= $number_of_subfields;
+           $subfield++) {
+
+        $element['table']['column_label'][$subfield] = array(
+          '#type' => 'textfield',
+          '#title' => t('Column label for Subfield !subfield', array('!subfield' => $subfield)),
+          '#size' => 30,
+          '#default_value' => (isset($column_label[$subfield])) ? $column_label[$subfield] : '',
+          '#tree' => TRUE,
+        );
+      }
+
+      break;
+  }
+
+  // Get a list of formats.
+  $options['_none'] = t('- None -');
+  foreach (filter_formats() as $format) {
+    $options[$format->format] = $format->name;
+  }
+
+  // Set $hidden, $format, $prefix and $suffix.
+  foreach($settings['display_options'] as $display_option => $display_option_value) {
+
+    // The single default value set in hook_field_formatter_info().
+    ${$display_option} = $display_option_value;
+
+    // Check if there is a serialized value saved in the database.
+    if (@unserialize($display_option_value) !== FALSE) {
+      // Turns into an array of values for each subfield.
+      ${$display_option} = unserialize($display_option_value);
+    }
+  }
+
+  // Common settings.
+  for ($subfield = 1;
+       $subfield <= $number_of_subfields;
+       $subfield++) {
+    
+    if ($subfield == 1 && !is_array($suffix)) {
+      $suffix = ':&nbsp;';
+    }
+
+    $element[$subfield]['display_options'] = array(
+      '#title' => t('Subfield !subfield', array('!subfield' => $subfield)),
+      '#type' => 'fieldset',
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+    );
+    $element[$subfield]['display_options']['hidden'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Hidden'),
+      '#default_value' => (isset($hidden[$subfield])) ? $hidden[$subfield] : $hidden,
+    );
+    $element[$subfield]['display_options']['format'] = array(
+      '#type' => 'select',
+      '#title' => t('Text format'),
+      '#options' => $options,
+      '#default_value' => (isset($format[$subfield])) ? $format[$subfield] : $format,
+      '#description' => t('Warning: This setting may have security implications.'),
+      '#element_validate' => array('composed_field_format_validate'),
+    );
+    $element[$subfield]['display_options']['prefix'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Prefix'),
+      '#size' => 30,
+      '#default_value' => (isset($prefix[$subfield])) ? $prefix[$subfield] : $prefix,
+    );
+    $element[$subfield]['display_options']['suffix'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Suffix'),
+      '#size' => 30,
+      '#default_value' => (isset($suffix[$subfield])) ? $suffix[$subfield] : $suffix,
+    );
+  }
+
+  return $element;
+}
+
+/**
+ * Implements hook_field_formatter_view().
+ */
+function composed_field_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+
+  $settings = $display['settings'];
+  $element = array();
+
+  $widget_settings = $instance['widget']['settings'];  
+  $number_of_subfields = $widget_settings['number_of_subfields'];
+
+  for ($subfield = 1;
+       $subfield <= $number_of_subfields;
+       $subfield++) {
+    
+   
+  }
+
+
+
+  if (!$items) {
+    return;
+  }
+
+  // Set $hidden, $format, $prefix and $suffix.
+  foreach($settings['display_options'] as $display_option => $display_option_value) {
+    // The single default value set in hook_field_formatter_info().
+    ${$display_option} = $display_option_value;
+
+    // Check if there is a serialized value saved in the database.
+    if (@unserialize($display_option_value) !== FALSE) {
+      // Turns into an array of values for each subfield.
+      ${$display_option} = unserialize($display_option_value);
+    }
+
+    if (!is_array(${$display_option})) {
+      $value = ${$display_option};
+      
+      ${$display_option} = array();
+      
+      foreach(range(1, $number_of_subfields) as $subfield) {
+        ${$display_option}[$subfield] = $value;
+      }
+    }
+  }
+
+  foreach ($items as $delta => $item) {
+
+    $item = unserialize($item['composed']);
+
+    for ($subfield = 1;
+         $subfield <= $number_of_subfields;
+         $subfield++) {
+
+
+      
+      if ($hidden[$subfield]) {
+        $item[$subfield] = FALSE;
+      }
+      else {
+        // Show value pair of allowed values on instead of their key value.
+        if (isset($instance['widget']['settings'][$subfield]['select']['allowed_values'])) {
+          $allowed_values = $instance['widget']['settings'][$subfield]['select']['allowed_values'];
+          $item[$subfield] = empty($allowed_values[$item[$subfield]]) ?
+          $item[$subfield] : $allowed_values[$item[$subfield]];
+        }
+        
+        // 
+        $item[$subfield] = $format[$subfield] == '_none' ?
+        check_plain($item[$subfield]) : check_markup($item[$subfield], $format[$subfield]);
+
+        // Do not display prefix and suffix for empty subfields.
+        $item[$subfield] = $prefix[$subfield] . $item[$subfield] . $suffix[$subfield];
+      }
+    }
+    
+    $items[$delta] = $item;
+  }
+
+  switch ($display['type']) {
+
+    case 'composed_field_fieldset':
+      foreach ($items as $delta => $item) {
+        $element[$delta] = array(
+          '#title' => $item['first'],
+          '#value' => $item['second'],
+          '#theme' => 'fieldset',
+          '#collapsible' => $settings['collapsible'],
+          '#collapsed' => $settings['collapsed'],
+        );
+        // theme_fieldset() doesn't handle '#collapsible', '#collapsed' arguments as claimed.
+        // see http://drupal.org/node/1099132
+        if ($settings['collapsible']) {
+          $element[$delta]['#attached'] = array(
+            'js' => array(
+              'misc/form.js',
+              'misc/collapse.js',
+            ),
+          );
+          $element[$delta]['#attributes'] = array(
+            'class' => $settings['collapsed'] ? array('collapsible', 'collapsed') : array('collapsible'),
+          );
+        }
+      }
+      break;
+
+    case 'composed_field_unformatted_list':
+      foreach ($items as $delta => $item) {
+        $element[$delta] = array(
+          '#display' => $display,
+          '#item' => $item,
+          '#theme' => 'composed_field',
+        );
+      }
+      break;
+
+    case 'composed_field_html_list':
+      foreach ($items as $item) {
+        $list_items[] = theme('composed_field', array(
+          '#display' => $display,
+          '#item' => $item,
+          '#theme' => 'composed_field',
+        ));
+      }
+      $element[0] = array(
+        '#theme' => 'item_list',
+        '#type' => $settings['list_type'],
+        '#items' => $list_items,
+      );
+      break;
+
+    case 'composed_field_dialog':
+      $element[0] = array(
+        '#theme' => 'composed_field_dialog',
+        '#items' => $items,
+      );
+      break;
+
+    case 'composed_field_table':
+      foreach ($items as $delta => $item) {
+        $row = array();
+        if ($settings['table']['number_column']) {
+          $row[] = ++$delta;
+        }
+        $row[] = $item['first'];
+        $row[] = $item['second'];
+        $rows[] = $row;
+      }
+      $header = array();
+      if ($settings['table']['first']['column_label'] || $settings['table']['second']['column_label']) {
+        if ($settings['table']['number_column']) {
+          $header[] = t('№');
+        }
+        $header[] = $settings['table']['first']['column_label'];
+        $header[] = $settings['table']['second']['column_label'];
+      }
+
+      // Display all values in a single element.
+      $element[0] = array(
+        '#theme' => 'table',
+        '#rows' => $rows,
+        '#header' => $header,
+      );
+      break;
+
+    case 'composed_field_accordion':
+      $element[0] = array(
+        '#theme' => 'composed_field_accordion',
+        '#items' => $items,
+      );
+      break;
+
+    case 'composed_field_tabs':
+      $element[0] = array(
+        '#theme' => 'composed_field_tabs',
+        '#items' => $items,
+      );
+      break;
+
+  }
+
+  return $element;
+}
+
+/**
+ * Implements hook_field_formatter_settings_summary().
+ */
+function composed_field_field_formatter_settings_summary($field, $instance, $view_mode) {
+  $settings = $instance['display'][$view_mode]['settings'];
+  $type = $instance['display'][$view_mode]['type'];
+
+  $widget_settings = $instance['widget']['settings'];  
+  $number_of_subfields = $widget_settings['number_of_subfields'];
+  
+  $summary = '';
+  switch ($type) {
+
+    case 'composed_field_fieldset':
+      $summary .= '<div>' . t('Collapsible: <em>@value</em>', array('@value' => $settings['collapsible'] ? 'Yes' : 'No')) . '</div>';
+      $summary .= '<div>' . t('Collapsed: <em>@value</em>', array('@value' => $settings['collapsed'] ? 'Yes' : 'No')) . '</div>';
+      break;
+
+    case 'composed_field_unformatted_list':
+    case 'composed_field_html_list':
+      $summary .= '<div>' . t('Display style: <em>@value</em>', array('@value' => t(ucfirst($settings['style'])))) . '</div>';
+      if ($type == 'composed_field_html_list') {
+        $summary .= '<div>' . t('List type: <em>@value</em>', array('@value' => $settings['list_type'] == 'ul' ? t('Unordered') : t('Ordered'))) . '</div>';
+      }
+      break;
+
+    case 'composed_field_table':
+      $summary .= '<div>' . t('Row number column: <em>@value</em>', array('@value' => $settings['table']['number_column'] ? 'Yes' : 'No')) . '</div>';
+      $summary .= '<div>' . t('First column label: <em>@value</em>', array('@value' => $settings['table'][1]['column_label'])) . '</div>';
+      $summary .= '<div>' . t('Second column label: <em>@value</em>', array('@value' => $settings['table'][$number_of_subfields]['column_label'])) . '</div>';
+      break;
+  }
+
+  $filter_formats = filter_formats();
+  
+  // Set $hidden, $format, $prefix and $suffix.
+  foreach($settings['display_options'] as $display_option => $display_option_value) {
+    ${$display_option} = unserialize($display_option_value);
+  }
+
+  for ($subfield = 1;
+       $subfield <= $number_of_subfields;
+       $subfield++) {
+    
+    $summary .= '<div><h5>' . t('Subfield !subfield', array('!subfield' => $subfield)) . '</h5>';
+    $summary .= '<div>' . t('Hidden: <em>@value</em>', array('@value' => $settings['display_options']['hidden'][$subfield] ? t('Yes') : t('No') )) . '</div>';
+    $format = isset($filter_formats[$settings['display_options']['format']]) ? $filter_formats[$settings['display_options']['format']]->name : '';
+    $summary .= '<div style="color: ' . ($settings['display_options']['format'] == 'full_html' ? 'red' : 'auto') . '">' . t('Format: <em>@value</em>', array('@value' => $format)) . '</div>';
+    $summary .= '<div>' . t('Prefix: <em>@value</em>', array('@value' => $settings['display_options']['prefix'])) . '</div>';
+    $summary .= '<div>' . t('Suffix: <em>@value</em>', array('@value' => $settings['display_options']['suffix'])) . '</div>';
+    $summary .= '</div>';
+    
+  }
+
+  return $summary;
+}
+
+//-- Theming.
+
+/**
+ * Implements hook_theme().
+ */
+function composed_field_theme() {
+  return array(
+    'composed_field' => array('render element' => 'element'),
+    'composed_field_accordion' => array('render element' => 'element'),
+    'composed_field_tabs' => array('render element' => 'element'),
+    'composed_field_dialog' => array('render element' => 'element'),
+  );
+}
+
+/**
+ * Implements theme_composed_field().
+ */
+function theme_composed_field($vars) {
+  $element = $vars['element'];
+  $settings = $element['#display']['settings'];
+
+  $class = $settings['style'] == 'block' ? 'clearfix' : 'container-inline';
+  $output = '<div class="' . $class . '">';
+    foreach($element['#item'] as $subfield => $subfield_value) {
+      $output .= "<div class='composed-field-$subfield'>$subfield_value</div>";
+    }
+  $output .= '</div>';
+
+  return $output;
+}
+
+/**
+ * Implements theme_composed_field_accordion().
+ */
+function theme_composed_field_accordion($vars) {
+  $output = '<div class="composed-field-accordion">';
+  foreach ($vars['element']['#items'] as $item) {
+
+    $output .= '<h3><a href="#">' . $item['first'] . '</a></h3>';
+    $output .= '<div>' . $item['second'] . '</div>';
+  }
+  $output .= '</div>';
+  drupal_add_library('system', 'ui.accordion');
+  drupal_add_js('jQuery(document).ready(function(){jQuery(".composed-field-accordion").accordion({ collapsible: true, active: false });});', 'inline');
+  return $output;
+}
+
+/**
+ * Implements theme_composed_field_tabs().
+ */
+function theme_composed_field_tabs($vars) {
+  $output = '';
+  foreach ($vars['element']['#items'] as $delta => $item) {
+    $vars['items'][] = '<a href="#tabs-' . $delta . '">' . $item['first'] . '</a>';
+    $output .= '<div id="tabs-' . $delta . '">' . $item['second'] . '</div>';
+  }
+  $output = '<div class="composed-field-tabs">' . theme('item_list', $vars) . $output . '</div>';
+  drupal_add_library('system', 'ui.tabs');
+  drupal_add_js('jQuery(document).ready(function(){jQuery(".composed-field-tabs").tabs();});', 'inline');
+  return $output;
+}
+
+/**
+ * Implements theme_composed_field_dialog().
+ */
+function theme_composed_field_dialog($vars) {
+  $output = '';
+  foreach (array_reverse($vars['element']['#items']) as $delta => $item) {
+    $output .= '<div class="composed-field-dialog" title="' . $item['first'] . '">' . $item['second'] . '</div>';
+  }
+  drupal_add_library('system', 'ui.dialog');
+  drupal_add_js('jQuery(document).ready(function(){jQuery(".composed-field-dialog").dialog();});', 'inline');
+  return $output;
 }

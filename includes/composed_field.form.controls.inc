@@ -17,7 +17,7 @@
         'value' => array(
           '#type' => 'select',
           '#options' => array(
-            '' => t('- Select a value -'),
+            '' => t('- Select -'),
             'checkbox' => t('Checkbox'),
             'checkboxes' => t('Checkboxes'),
             'date' => t('Date'),
