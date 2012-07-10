@@ -858,9 +858,16 @@ function composed_field_field_formatter_view($entity_type, $entity, $field, $ins
 
     case 'composed_field_fieldset':
       foreach ($items as $delta => $item) {
+        $value = '';
+        foreach ($item as $subfield => $subfield_value) {
+          if ($subfield !== 1) {
+            $value .= $subfield_value;
+          }
+        }
+
         $element[$delta] = array(
-          '#title' => $item['first'],
-          '#value' => $item['second'],
+          '#title' => $item[1],
+          '#value' => $value,
           '#theme' => 'fieldset',
           '#collapsible' => $settings['collapsible'],
           '#collapsed' => $settings['collapsed'],
@@ -1047,11 +1054,18 @@ function theme_composed_field($vars) {
  */
 function theme_composed_field_accordion($vars) {
   $output = '<div class="composed-field-accordion">';
+  $value = '';
   foreach ($vars['element']['#items'] as $item) {
-
-    $output .= '<h3><a href="#">' . $item['first'] . '</a></h3>';
-    $output .= '<div>' . $item['second'] . '</div>';
+    foreach($item as $subfield => $subfield_value) {
+      if ($subfield === 1) {
+        $output .= '<h3><a href="#">' . $item[1] . '</a></h3>';
+      }
+      else {
+        $value .= $item[$subfield];
+      }
+    }
   }
+  $output .= '<div>' . $value . '</div>'; 
   $output .= '</div>';
   drupal_add_library('system', 'ui.accordion');
   drupal_add_js('jQuery(document).ready(function(){jQuery(".composed-field-accordion").accordion({ collapsible: true, active: false });});', 'inline');
@@ -1063,9 +1077,15 @@ function theme_composed_field_accordion($vars) {
  */
 function theme_composed_field_tabs($vars) {
   $output = '';
+  $value = '';
   foreach ($vars['element']['#items'] as $delta => $item) {
-    $vars['items'][] = '<a href="#tabs-' . $delta . '">' . $item['first'] . '</a>';
-    $output .= '<div id="tabs-' . $delta . '">' . $item['second'] . '</div>';
+    $vars['items'][] = '<a href="#tabs-' . $delta . '">' . $item[1] . '</a>';
+    foreach ($item as $subfield => $subfield_value) {
+      if ($subfield !== 1) {
+        $value .= $item[$subfield];
+      }
+    }
+    $output .= '<div id="tabs-' . $delta . '">' . $value . '</div>';
   }
   $output = '<div class="composed-field-tabs">' . theme('item_list', $vars) . $output . '</div>';
   drupal_add_library('system', 'ui.tabs');
@@ -1078,8 +1098,14 @@ function theme_composed_field_tabs($vars) {
  */
 function theme_composed_field_dialog($vars) {
   $output = '';
+  $value = '';
   foreach (array_reverse($vars['element']['#items']) as $delta => $item) {
-    $output .= '<div class="composed-field-dialog" title="' . $item['first'] . '">' . $item['second'] . '</div>';
+    foreach ($item as $subfield => $subfield_value) {
+      if ($subfield !== 1) {
+        $value .= $item[$subfield];
+      }
+    }
+    $output .= '<div class="composed-field-dialog" title="' . $item[1] . '">' . $value . '</div>';
   }
   drupal_add_library('system', 'ui.dialog');
   drupal_add_js('jQuery(document).ready(function(){jQuery(".composed-field-dialog").dialog();});', 'inline');

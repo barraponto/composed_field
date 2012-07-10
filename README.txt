@@ -21,10 +21,10 @@ The sub-fields values will be lumped together into an array like this:
 
 <?php
 array(
-[1] => 'landline', // Landline / Mobile sub-field.
-[2] => '55', // Country code  sub-field.
-[3] => '66', // Area code  sub-field.
-[4] => '3521-5555', // Number  sub-field.
+  [1] => 'landline', // Landline / Mobile sub-field.
+  [2] => '55', // Country code  sub-field.
+  [3] => '66', // Area code  sub-field.
+  [4] => '3521-5555', // Number  sub-field.
 );
 ?>
 
@@ -43,3 +43,6 @@ can be set with any of the element types listed in Form Controls
 
 Once you enable this module you will have a new "Type of data to store" called
 Composed Field at the Field UI.
+
+You should also give permission to trusted roles for entering PHP code into the
+sub-field attributes that requires it so for functioning.
