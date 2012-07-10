@@ -2,7 +2,7 @@
 /**
  * @file
  * Defines an associative array of Form Controls structure.
- * 
+ *
  * @see http://api.drupal.org/api/drupal/developer!topics!forms_api_reference.html/7
  */
 
