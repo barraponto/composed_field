@@ -5,11 +5,46 @@
  */
 
 /**
+ * Implements hook_permission().
+ */
+function composed_field_permission() {
+  return array(
+    'use PHP in widget settings form' => array(
+      'title' => t('Use PHP in the widget settings form'),
+      'description' => t('Enter PHP code in the widget settings form. %warning', array('%warning' => t('Warning: Give to trusted roles only; this permission has security implications.'))),
+    ),
+  );
+}
+
+/**
+ * Validate the form control element that should have been filled up by an user
+ * with permission to enter or alter the PHP code in it.
+ */
+function composed_field_php_permission(&$element, &$form_state) {
+  $element_name = $element['#parents'][4];
+  $element_subfield = $element['#parents'][5];
+  $element_value = $element['#default_value'];
+
+  $submitted_values = $form_state['values']['instance']['widget']['settings']['composed_field'][$element_name];
+  
+  if (!user_access('use PHP in widget settings form')) {
+    // Check if the current user has altered the element value saved by
+    // another user that had permission to do so.
+    foreach($submitted_values as $subfield => $subfield_value) {
+      if ($submitted_values[$element_subfield]['value'] != $element_value) {
+        form_error($element, t('You do not have permission to either enter or change the value in %element-title.', array('%element-title' => "#$element_name | " . $element['#title'])));
+      }
+    }
+  }
+
+  return $element;
+}
+
+/**
  * Implements hook_field_info().
  */
 function composed_field_field_info() {
   return array(
-    // We name our field as the associative name of the array.
     'composed_field' => array(
       'label' => t('Composed field'),
       'description' => t('This field stores serialized array in the database.'),
@@ -33,16 +68,9 @@ function composed_field_field_widget_info() {
 
 /**
  * Implements hook_field_is_empty().
- *
- * hook_field_is_emtpy() is where Drupal asks us if this field is empty.
- * Return TRUE if it does not contain data, FALSE if it does. This lets
- * the form API flag an error when required fields are empty.
  */
 function composed_field_field_is_empty($item, $field) {
-  //return empty($item['rgb']);
-  
-  // TODO:
-  return FALSE;
+  return empty($item['composed']);
 }
 
 /**
@@ -62,7 +90,7 @@ function composed_field_form_field_ui_field_edit_form_alter(&$form, &$form_state
     $form_widget['#composed_field']['vertical_tab_settings']['number_of_subfields'] = $widget_form_state_values['number_of_subfields'];
 
     _composed_field_build_form_controls_in_vertical_tabs($form_widget, $widget_form_state_values);
-      
+
     // Return the updated form.
     $form['instance']['widget']['settings'] = $form_widget;
   }
@@ -72,9 +100,7 @@ function composed_field_form_field_ui_field_edit_form_alter(&$form, &$form_state
  * Implements hook_field_widget_settings_form().
  */
 function composed_field_field_widget_settings_form($field, $instance) {
-  
   $widget_form_state_values = $instance['widget']['settings'];
-
   $number_of_subfields_title = t('Number of subfields');
 
   // Assume there is no value set for number_of_subfields as yet.
@@ -132,7 +158,7 @@ function composed_field_field_widget_settings_form($field, $instance) {
 }
 
 /**
- * AJAX callback from number_of_fields widget form element.
+ * AJAX callback. Updates the field widget form.
  */
 function _composed_field_vertical_tabs_ajax_callback($form, $form_state) {
   $form_widget = $form['instance']['widget']['settings'];
@@ -152,13 +178,15 @@ function composed_field_field_widget_form(&$form, &$form_state, $field, $instanc
   $settings = $instance['widget']['settings'];
   $number_of_subfields = (isset($settings['number_of_subfields'])) ? $settings['number_of_subfields'] : 1;
   $element['composed']['#theme_wrappers'] = array('form_element');
-  
+
+  $default_value = (isset($items[$delta]['composed'])) ? $items[$delta]['composed'] : array();
+
   // Create as many form elements in each tab as there are subfields.
   for ($subfield = 1;
        $subfield <= $number_of_subfields;
        $subfield++) {
 
-    $element['composed'][$subfield] = _composed_field_build_subfield_element($settings, $subfield);
+    $element['composed'][$subfield] = _composed_field_build_subfield_element($settings, $subfield, $default_value);
   }
 
   if (isset($settings['inline']) &&
@@ -182,8 +210,22 @@ function composed_field_field_widget_form(&$form, &$form_state, $field, $instanc
 function composed_field_field_presave($entity_type, $entity, $field, $instance, $langcode, &$items) {
   if ($field['type'] == 'composed_field') {
     foreach ($items as $delta => $item) {
-      if (isset($item['composed'])) {
+
+      $all_subfields_have_value = FALSE;
+      foreach($item['composed'] as $subfield_value) {
+        if (!empty($subfield_value)) {
+          $all_subfields_have_value = TRUE;
+          break;
+        }
+      }
+
+      if ($all_subfields_have_value) {
+        // Save it.
         $items[$delta]['composed'] = serialize($item['composed']);
+      }
+      else {
+        // Do not save it.
+        unset($items[$delta]);
       }
     }
   }
@@ -196,15 +238,27 @@ function composed_field_field_presave($entity_type, $entity, $field, $instance, 
  *   Field widget settings.
  * @param Int $subfield
  *   The subfield sequence number.
+ * @param String $default_value
+ *   The field's serialized value.
  * @param String $form_control_element
  *   The array key under widget_form array in $form_control.
  * @return Array
  *   The subfield form element.
  */
-function _composed_field_build_subfield_element($settings, $subfield, $form_control_element = 'value') {
+function _composed_field_build_subfield_element($settings, $subfield, $default_value = array(), $form_control_element = 'value') {
   $form_controls = _composed_field_form_controls_api();
   $form_control_attributes = array_keys($form_controls);
+  
+  if (!empty($default_value)) {
+    // Check if value is serialized.
+    if (@unserialize($default_value) !== FALSE) {
+      // Turns it into an associative array of subfield values.
+      $default_value = unserialize($default_value);
+    }
+  }
 
+  $default_value = (isset($default_value[$subfield])) ? $default_value[$subfield] : '';
+  
   $element = array();
   
   // Go through all attributes and check if a setting value has been entered
@@ -226,9 +280,23 @@ function _composed_field_build_subfield_element($settings, $subfield, $form_cont
           $value = $function_name($value);
         }
       }
+
       $element[$form_control_attributes_name] = $value;
+
+      $is_php = $form_controls[$form_control_attributes_name]['widget_form']['value'];
+      $is_php = (isset($is_php['#element_validate'])) ? $is_php['#element_validate'] : array();
+      // If the field element has the validation function
+      // composed_field_php_permission set then its value must be php code.
+      $is_php = (in_array('composed_field_php_permission', $is_php)) ? TRUE : FALSE;
+
+      if ($is_php && !empty($value)) {
+        // Evaluate the php code.
+        $element[$form_control_attributes_name] = eval($value);
+      }
     }
   }
+
+  $element['#default_value'] = $default_value;
 
   return $element; 
 }
@@ -264,8 +332,8 @@ function _composed_field_build_form_controls_in_vertical_tabs(&$form, $widget_fo
     $tab_name = str_replace('#', '', $attribute_name);
 
     $description = t('See !form_controls for more details.',
-      array('!form_controls' => l(t('Form Controls'),
-      'http://api.drupal.org/api/drupal/developer!topics!forms_api_reference.html/7',
+      array('!form_controls' => l(t('Form Controls !tab_name', array('!tab_name' => "#$tab_name")),
+      "http://api.drupal.org/api/drupal/developer!topics!forms_api_reference.html/7#$tab_name",
       array('attributes' => array('target' => '_blank'))))
     );
 
@@ -347,7 +415,9 @@ function _composed_field_build_vertical_tab_elements(&$form, $widget_form_state_
 
       if ($enable_this_attribute_element_value) {
         $form_element_properties['#disabled'] = FALSE;
-        $form_element_properties['#default_value'] = $widget_form_state_values['composed_field'][$tab_name][$subfield][$form_element];
+        $default_value = $widget_form_state_values['composed_field'][$tab_name][$subfield][$form_element];
+
+        $form_element_properties['#default_value'] = $default_value;
       }
 
       // Determine which tab are we in.
@@ -369,7 +439,7 @@ function _composed_field_build_vertical_tab_elements(&$form, $widget_form_state_
 
         case '#default_value':
           if (!empty($selected_value_for_type_attribute)) {
-            $form_element_properties = _composed_field_build_subfield_element($widget_form_state_values, $subfield, $form_element);
+            $form_element_properties = _composed_field_build_subfield_element($widget_form_state_values, $subfield, array(), $form_element);
           }
 
         break;
@@ -418,6 +488,32 @@ function _composed_field_list_allowed_values_array($value) {
   return $array;
 }
 
+/**
+ * Returns an array of allowed values for a list field.
+ *
+ * @param String $value
+ *   The piped pair list of allowed values.
+ *
+ * @return String
+ *   The array of allowed values. Keys of the array are the raw stored values
+ *   (number or text), values of the array are the display labels.
+ */
+function _composed_field_serialize($value) {
+  // Break the lines.
+  $array = explode("\n", $value);
+
+  // Break the pipes.
+  foreach($array as $key => $line) {
+    unset($array[$key]);
+
+    if (!empty($line)) {
+      $line = explode("|", $line);
+      $array[check_plain($line[0])] = check_plain($line[1]);
+    }
+  }
+
+  return $array;
+}
 
 /**
  * Implements hook_field_formatter_info().
@@ -475,6 +571,51 @@ function composed_field_field_formatter_info() {
     ),
   );
 }
+
+/**
+ * Builds the subfield values from the display options formatter info.
+ *
+ * @param Array $display_options
+ *   An array keyed with hidden, format, prefix and suffix. This function
+ *   checks if each value in those keys are serialized, if so it unserializes
+ *   it resulting in a sub array of setting values for each subfield, if not it
+ *   will then creates the sub array and repeat the same setting value for each
+ *   subfield.
+ * @param Int $number_of_subfields
+ *   The total number of subfields for the field being displayed. This value is
+ *   only used when the $display_options values are not serialized.
+ *
+ * @return Array
+ *   The associative array setting values of hidden, format, prefix and
+ *   suffix for each subfield.
+ */
+function _composed_field_formatter_info_unserialize_display_options($display_options, $number_of_subfields) {
+
+  // Go through hidden, format, prefix and suffix.
+  foreach($display_options as $display_option => $display_option_value) {
+
+    // Check if each value is serialized.
+    if (@unserialize($display_option_value) !== FALSE) {
+      // Turns it into an associative array of setting values for each subfield.
+      $display_options[$display_option] = unserialize($display_option_value);
+    }
+    else {
+      // The display options never got serialized so we gotta create an array
+      // of default setting values for each subfield.
+      $display_options[$display_option] = array();
+
+      foreach(range(1, $number_of_subfields) as $subfield) {
+        // Repeat the same setting value for each subfield.
+        $display_options[$display_option][$subfield] = $display_option_value;
+      }
+    }
+  }
+  
+  return $display_options;
+}
+
+
+
 
 function composed_field_field_formatter_settings_form_submit() {
   //dcp('test-submit');
@@ -581,26 +722,16 @@ function composed_field_field_formatter_settings_form($field, $instance, $view_m
     $options[$format->format] = $format->name;
   }
 
-  // Set $hidden, $format, $prefix and $suffix.
-  foreach($settings['display_options'] as $display_option => $display_option_value) {
-
-    // The single default value set in hook_field_formatter_info().
-    ${$display_option} = $display_option_value;
-
-    // Check if there is a serialized value saved in the database.
-    if (@unserialize($display_option_value) !== FALSE) {
-      // Turns into an array of values for each subfield.
-      ${$display_option} = unserialize($display_option_value);
-    }
-  }
+  // Set the default value for hidden, format, $prefix and suffix.
+  $display_options = _composed_field_formatter_info_unserialize_display_options($settings['display_options'], $number_of_subfields);
 
   // Common settings.
   for ($subfield = 1;
        $subfield <= $number_of_subfields;
        $subfield++) {
-    
-    if ($subfield == 1 && !is_array($suffix)) {
-      $suffix = ':&nbsp;';
+
+    if ($subfield == 1 && empty($display_options['suffix'][$subfield])) {
+      $display_options['suffix'][$subfield] = ':&nbsp;';
     }
 
     $element[$subfield]['display_options'] = array(
@@ -612,13 +743,13 @@ function composed_field_field_formatter_settings_form($field, $instance, $view_m
     $element[$subfield]['display_options']['hidden'] = array(
       '#type' => 'checkbox',
       '#title' => t('Hidden'),
-      '#default_value' => (isset($hidden[$subfield])) ? $hidden[$subfield] : $hidden,
+      '#default_value' => $display_options['hidden'][$subfield],
     );
     $element[$subfield]['display_options']['format'] = array(
       '#type' => 'select',
       '#title' => t('Text format'),
       '#options' => $options,
-      '#default_value' => (isset($format[$subfield])) ? $format[$subfield] : $format,
+      '#default_value' => $display_options['format'][$subfield],
       '#description' => t('Warning: This setting may have security implications.'),
       '#element_validate' => array('composed_field_format_validate'),
     );
@@ -626,13 +757,13 @@ function composed_field_field_formatter_settings_form($field, $instance, $view_m
       '#type' => 'textfield',
       '#title' => t('Prefix'),
       '#size' => 30,
-      '#default_value' => (isset($prefix[$subfield])) ? $prefix[$subfield] : $prefix,
+      '#default_value' => $display_options['prefix'][$subfield],
     );
     $element[$subfield]['display_options']['suffix'] = array(
       '#type' => 'textfield',
       '#title' => t('Suffix'),
       '#size' => 30,
-      '#default_value' => (isset($suffix[$subfield])) ? $suffix[$subfield] : $suffix,
+      '#default_value' => $display_options['suffix'][$subfield],
     );
   }
 
@@ -650,40 +781,12 @@ function composed_field_field_formatter_view($entity_type, $entity, $field, $ins
   $widget_settings = $instance['widget']['settings'];  
   $number_of_subfields = $widget_settings['number_of_subfields'];
 
-  for ($subfield = 1;
-       $subfield <= $number_of_subfields;
-       $subfield++) {
-    
-   
-  }
-
-
-
   if (!$items) {
     return;
   }
 
-  // Set $hidden, $format, $prefix and $suffix.
-  foreach($settings['display_options'] as $display_option => $display_option_value) {
-    // The single default value set in hook_field_formatter_info().
-    ${$display_option} = $display_option_value;
-
-    // Check if there is a serialized value saved in the database.
-    if (@unserialize($display_option_value) !== FALSE) {
-      // Turns into an array of values for each subfield.
-      ${$display_option} = unserialize($display_option_value);
-    }
-
-    if (!is_array(${$display_option})) {
-      $value = ${$display_option};
-      
-      ${$display_option} = array();
-      
-      foreach(range(1, $number_of_subfields) as $subfield) {
-        ${$display_option}[$subfield] = $value;
-      }
-    }
-  }
+  // Set the default value for hidden, format, prefix and suffix.
+  $display_options = _composed_field_formatter_info_unserialize_display_options($settings['display_options'], $number_of_subfields);
 
   foreach ($items as $delta => $item) {
 
@@ -693,9 +796,7 @@ function composed_field_field_formatter_view($entity_type, $entity, $field, $ins
          $subfield <= $number_of_subfields;
          $subfield++) {
 
-
-      
-      if ($hidden[$subfield]) {
+      if ($display_options['hidden'][$subfield]) {
         $item[$subfield] = FALSE;
       }
       else {
@@ -705,13 +806,12 @@ function composed_field_field_formatter_view($entity_type, $entity, $field, $ins
           $item[$subfield] = empty($allowed_values[$item[$subfield]]) ?
           $item[$subfield] : $allowed_values[$item[$subfield]];
         }
-        
-        // 
-        $item[$subfield] = $format[$subfield] == '_none' ?
-        check_plain($item[$subfield]) : check_markup($item[$subfield], $format[$subfield]);
+
+        $item[$subfield] = $display_options['format'][$subfield] == '_none' ?
+        check_plain($item[$subfield]) : check_markup($item[$subfield], $display_options['format'][$subfield]);
 
         // Do not display prefix and suffix for empty subfields.
-        $item[$subfield] = $prefix[$subfield] . $item[$subfield] . $suffix[$subfield];
+        $item[$subfield] = $display_options['prefix'][$subfield] . $item[$subfield] . $display_options['suffix'][$subfield];
       }
     }
     
@@ -857,22 +957,20 @@ function composed_field_field_formatter_settings_summary($field, $instance, $vie
   }
 
   $filter_formats = filter_formats();
-  
-  // Set $hidden, $format, $prefix and $suffix.
-  foreach($settings['display_options'] as $display_option => $display_option_value) {
-    ${$display_option} = unserialize($display_option_value);
-  }
+
+  // Set the default value for hidden, format, prefix and suffix.
+  $display_options = _composed_field_formatter_info_unserialize_display_options($settings['display_options'], $number_of_subfields);
 
   for ($subfield = 1;
        $subfield <= $number_of_subfields;
        $subfield++) {
     
     $summary .= '<div><h5>' . t('Subfield !subfield', array('!subfield' => $subfield)) . '</h5>';
-    $summary .= '<div>' . t('Hidden: <em>@value</em>', array('@value' => $settings['display_options']['hidden'][$subfield] ? t('Yes') : t('No') )) . '</div>';
-    $format = isset($filter_formats[$settings['display_options']['format']]) ? $filter_formats[$settings['display_options']['format']]->name : '';
-    $summary .= '<div style="color: ' . ($settings['display_options']['format'] == 'full_html' ? 'red' : 'auto') . '">' . t('Format: <em>@value</em>', array('@value' => $format)) . '</div>';
-    $summary .= '<div>' . t('Prefix: <em>@value</em>', array('@value' => $settings['display_options']['prefix'])) . '</div>';
-    $summary .= '<div>' . t('Suffix: <em>@value</em>', array('@value' => $settings['display_options']['suffix'])) . '</div>';
+    $summary .= '<div>' . t('Hidden: <em>@value</em>', array('@value' => $display_options['hidden'][$subfield] ? t('Yes') : t('No') )) . '</div>';
+    $format = isset($filter_formats[$display_options['format'][$subfield]]) ? $filter_formats[$display_options['format'][$subfield]]->name : '';
+    $summary .= '<div style="color: ' . ($display_options['format'][$subfield] == 'full_html' ? 'red' : 'auto') . '">' . t('Format: <em>@value</em>', array('@value' => $format)) . '</div>';
+    $summary .= '<div>' . t('Prefix: <em>@value</em>', array('@value' => $display_options['prefix'][$subfield])) . '</div>';
+    $summary .= '<div>' . t('Suffix: <em>@value</em>', array('@value' => $display_options['suffix'][$subfield])) . '</div>';
     $summary .= '</div>';
     
   }
