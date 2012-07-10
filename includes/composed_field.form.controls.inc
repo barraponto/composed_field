@@ -248,7 +248,7 @@ $form_controls = array(
       'value' => array(
         '#type' => 'textarea',
         '#description' => $description_php1 .
-          t($description_php2, array('!code' => $description_code_sample)),
+        t($description_php2, array('!code' => $description_code_sample)),
         '#element_validate' => array('composed_field_php_permission'),
       ),
     ),
@@ -278,9 +278,7 @@ $form_controls = array(
       'value' => array(
         '#type' => 'textarea',
         '#description' => $description_php1 .
-          t($description_php2, array('!code' => "<h3>return array('css' => array(
-              drupal_get_path('module', 'ajax_example') . '/ajax_example.css',
-            );</h3>")),
+        t($description_php2, array('!code' => "<h3>return array('css' => array(drupal_get_path('module', 'ajax_example') . '/ajax_example.css',);</h3>")),
         '#element_validate' => array('composed_field_php_permission'),
       ),
     ),
@@ -310,7 +308,7 @@ $form_controls = array(
       'value' => array(
         '#type' => 'textarea',
         '#description' => $description_php1 .
-          t($description_php2, array('!code' => $description_code_sample)),
+        t($description_php2, array('!code' => $description_code_sample)),
         '#element_validate' => array('composed_field_php_permission'),
       ),
     ),
@@ -333,14 +331,14 @@ $form_controls = array(
       'textfield',
       'vertical_tabs',
       'weight',
-    )
+    ),
   ),
   '#parents' => array(
     'widget_form' => array(
       'value' => array(
         '#type' => 'textarea',
         '#description' => $description_php1 .
-          t($description_php2, array('!code' => $description_code_sample)),
+        t($description_php2, array('!code' => $description_code_sample)),
         '#element_validate' => array('composed_field_php_permission'),
       ),
     ),
@@ -370,7 +368,7 @@ $form_controls = array(
       'value' => array(
         '#type' => 'textarea',
         '#description' => $description_php1 .
-          t($description_php2, array('!code' => $description_code_sample)),
+        t($description_php2, array('!code' => $description_code_sample)),
         '#element_validate' => array('composed_field_php_permission'),
       ),
     ),
@@ -400,7 +398,7 @@ $form_controls = array(
       'value' => array(
         '#type' => 'textarea',
         '#description' => $description_php1 .
-          t($description_php2, array('!code' => $description_code_sample)),
+        t($description_php2, array('!code' => $description_code_sample)),
         '#element_validate' => array('composed_field_php_permission'),
       ),
     ),
@@ -430,7 +428,7 @@ $form_controls = array(
       'value' => array(
         '#type' => 'textarea',
         '#description' => $description_php1 .
-          t($description_php2, array('!code' => $description_code_sample)),
+        t($description_php2, array('!code' => $description_code_sample)),
         '#element_validate' => array('composed_field_php_permission'),
       ),
     ),
@@ -460,7 +458,7 @@ $form_controls = array(
       'value' => array(
         '#type' => 'textarea',
         '#description' => $description_php1 .
-          t($description_php2, array('!code' => $description_code_sample)),
+        t($description_php2, array('!code' => $description_code_sample)),
         '#element_validate' => array('composed_field_php_permission'),
       ),
     ),
@@ -518,7 +516,7 @@ $form_controls = array(
       'value' => array(
         '#type' => 'textarea',
         '#description' => $description_php1 .
-          t($description_php2, array('!code' => $description_code_sample)),
+        t($description_php2, array('!code' => $description_code_sample)),
         '#description' => t("The name of a theme function, without the initial 'theme_'"),
         '#element_validate' => array('composed_field_php_permission'),
       ),
@@ -637,8 +635,8 @@ $form_controls = array(
           'before' => t('Before'),
           'after' => t('After'),
           'invisible' => t('Invisible'),
-          'attribute' => t('Attribute (Supported only by checkboxes and radios)')
-        )
+          'attribute' => t('Attribute (Supported only by checkboxes and radios)'),
+        ),
       ),
     ),
     'supported_types' => array(
@@ -665,7 +663,7 @@ $form_controls = array(
       'value' => array(
         '#type' => 'textarea',
         '#description' => $description_php1 .
-          t($description_php2, array('!code' => "<h3>return array('class' => array('search-form'));</h3>")),
+        t($description_php2, array('!code' => "<h3>return array('class' => array('search-form'));</h3>")),
         '#element_validate' => array('composed_field_php_permission'),
       ),
     ),
@@ -718,7 +716,7 @@ $form_controls = array(
       'value' => array(
         '#type' => 'textarea',
         '#description' => $description_php1 .
-          t($description_php2, array('!code' => "<h3>return array('callback' => 'mycallbackfunction', 'wrapper' => 'mywrapper');</h3>")),
+        t($description_php2, array('!code' => "<h3>return array('callback' => 'mycallbackfunction', 'wrapper' => 'mywrapper');</h3>")),
         '#element_validate' => array('composed_field_php_permission'),
       ),
     ),
@@ -866,7 +864,7 @@ $form_controls = array(
       'value' => array(
         '#type' => 'textarea',
         '#description' => $description_php1 .
-          t($description_php2, array('!code' => $description_code_sample)),
+        t($description_php2, array('!code' => $description_code_sample)),
         '#element_validate' => array('composed_field_php_permission'),
       ),
     ),
@@ -886,7 +884,7 @@ $form_controls = array(
       'value' => array(
         '#type' => 'textarea',
         '#description' => $description_php1 .
-          t($description_php2, array('!code' => $description_code_sample)),
+        t($description_php2, array('!code' => $description_code_sample)),
         '#element_validate' => array('composed_field_php_permission'),
       ),
     ),

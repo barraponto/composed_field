@@ -299,14 +299,13 @@ function _composed_field_build_subfield_element($settings, $subfield, $default_v
 
   $element['#default_value'] = $default_value;
 
-  return $element; 
+  return $element;
 }
 
 /**
  * Returns the Form Control Attributes.
  *
- * @see
- *  http://api.drupal.org/api/drupal/developer!topics!forms_api_reference.html/7
+ * @see http://api.drupal.org/api/drupal/developer!topics!forms_api_reference.html/7
  *
  * @return Array
  *   Associative array of the form control's api structure.
@@ -349,7 +348,7 @@ function _composed_field_build_form_controls_in_vertical_tabs(&$form, $widget_fo
       '#type' => 'fieldset',
       '#description' => $description,
     );
-   
+
     $form['#composed_field']['vertical_tab_settings']['attribute_name'] = $attribute_name;
     $form['#composed_field']['vertical_tab_settings']['tab_name'] = $tab_name;
     // Build the tab elements.
@@ -359,7 +358,7 @@ function _composed_field_build_form_controls_in_vertical_tabs(&$form, $widget_fo
 
 /**
  * Populates each widget form vertical tab with their form elements.
- * 
+ *
  * @param Array $form
  *   The widget settings form.
  * @param Array $widget_form_state_values
@@ -383,7 +382,7 @@ function _composed_field_build_vertical_tab_elements(&$form, $widget_form_state_
     $form['composed_field'][$tab_name][$subfield] = array(
       '#type' => 'fieldset',
     );
- 
+
     foreach ($form_control_structure['widget_form'] as $form_element => $form_element_properties) {
       $title = (empty($form_element_properties['#title'])) ? '' : $form_element_properties['#title'];
       $form_element_properties['#title'] = $title . t('Subfield !subfield', array('!subfield' => $subfield));
@@ -802,12 +801,13 @@ function composed_field_field_formatter_view($entity_type, $entity, $field, $ins
         // Show value pair of allowed values on instead of their key value.
         if (isset($instance['widget']['settings'][$subfield]['select']['allowed_values'])) {
           $allowed_values = $instance['widget']['settings'][$subfield]['select']['allowed_values'];
-          $item[$subfield] = empty($allowed_values[$item[$subfield]]) ? 
-          $item[$subfield] : $allowed_values[$item[$subfield]];
+          $item[$subfield] = empty($allowed_values[$item[$subfield]])
+          ? $item[$subfield] : $allowed_values[$item[$subfield]];
         }
 
-        $item[$subfield] = $display_options['format'][$subfield] == '_none' ? 
-        check_plain($item[$subfield]) : check_markup($item[$subfield], $display_options['format'][$subfield]);
+        $item[$subfield] = $display_options['format'][$subfield] == '_none'
+        ? check_plain($item[$subfield])
+        : check_markup($item[$subfield], $display_options['format'][$subfield]);
 
         // Do not display prefix and suffix for empty subfields.
         $item[$subfield] = $display_options['prefix'][$subfield] . $item[$subfield] . $display_options['suffix'][$subfield];
@@ -975,8 +975,6 @@ function composed_field_field_formatter_settings_summary($field, $instance, $vie
 
   return $summary;
 }
-
-// -- Theming.
 
 /**
  * Implements hook_theme().
