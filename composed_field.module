@@ -36,8 +36,6 @@ function composed_field_php_permission(&$element, &$form_state) {
       }
     }
   }
-
-  return $element;
 }
 
 /**
@@ -333,9 +331,9 @@ function _composed_field_build_form_controls_in_vertical_tabs(&$form, $widget_fo
     $tab_name = str_replace('#', '', $attribute_name);
 
     $description = t('See !form_controls for more details.',
-      array('!form_controls' => l(t('Form Controls !tab_name', array('!tab_name' => "#$tab_name")),
-      "http://api.drupal.org/api/drupal/developer!topics!forms_api_reference.html/7#$tab_name",
-      array('attributes' => array('target' => '_blank'))))
+    array('!form_controls' => l(t('Form Controls !tab_name', array('!tab_name' => "#$tab_name")),
+    "http://api.drupal.org/api/drupal/developer!topics!forms_api_reference.html/7#$tab_name",
+    array('attributes' => array('target' => '_blank'))))
     );
 
     if ($tab_name == 'default_value') {
@@ -614,24 +612,19 @@ function _composed_field_formatter_info_unserialize_display_options($display_opt
 }
 
 /**
- *
- */
-function composed_field_field_formatter_settings_form_submit() {
-  //dcp('test-submit');
-}
-
-/**
  * Implements hook_field_formatter_settings_form().
  */
 function composed_field_field_formatter_settings_form($field, $instance, $view_mode, $form, &$form_state) {
   $settings = $instance['display'][$view_mode]['settings'];
-  $element = array(
-    '#tree' => TRUE,
-    '#submit' => array('composed_field_field_formatter_settings_form_submit'),
-  );
+  $element = array('#tree' => TRUE);
 
   $widget_settings = $instance['widget']['settings'];
   $number_of_subfields = $widget_settings['number_of_subfields'];
+
+  $element['number_of_subfields'] = array(
+    '#type' => 'hidden',
+    '#default_value' => $number_of_subfields,
+  );
 
   $style_settings = array(
     '#type' => 'select',
@@ -714,6 +707,14 @@ function composed_field_field_formatter_settings_form($field, $instance, $view_m
       break;
   }
 
+  $display_options = array('hidden', 'format', 'prefix', 'suffix');
+
+  foreach ($display_options as $display_option) {
+    $element['display_options'][$display_option] = array(
+      '#type' => 'hidden',
+    );
+  }
+
   // Get a list of formats.
   $options['_none'] = t('- None -');
   foreach (filter_formats() as $format) {
@@ -737,6 +738,7 @@ function composed_field_field_formatter_settings_form($field, $instance, $view_m
       '#type' => 'fieldset',
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
+      '#element_validate' => array('_composed_field_formatter_info_serialize_display_options'),
     );
     $element[$subfield]['display_options']['hidden'] = array(
       '#type' => 'checkbox',
@@ -766,6 +768,43 @@ function composed_field_field_formatter_settings_form($field, $instance, $view_m
   }
 
   return $element;
+}
+
+/**
+ * Element validate callback.
+ *
+ * Serializes the display option values of field_formatter_info.
+ */
+function _composed_field_formatter_info_serialize_display_options($element, &$form_state, $form) {
+  $field_name = $element['#parents'][1];
+  $subfield = $element['#parents'][4];
+  $submitted_values = $form_state['values']['fields'][$field_name]['settings_edit_form']['settings'];
+  $submitted_display_options = $submitted_values[$subfield]['display_options'];
+
+  $number_of_subfields = $submitted_values['number_of_subfields'];
+
+  foreach($submitted_display_options as $display_option => $display_option_value) {
+    $form_state['values']['fields'][$field_name]['settings_edit_form']['settings']['display_options'][$display_option][$subfield] = $display_option_value;
+  }
+  
+  // Serialize the values for hidden, format, prefix and suffix.
+  if ($number_of_subfields == $subfield) {
+    $display_options = $form_state['values']['fields'][$field_name]['settings_edit_form']['settings']['display_options'];
+
+    foreach ($display_options as $display_option => $display_option_values) {
+      $display_options[$display_option] = serialize($display_option_values);
+    }
+    $form_state['values']['fields'][$field_name]['settings_edit_form']['settings']['display_options'] = $display_options;
+  }
+}
+
+/**
+ * Element validate callback.
+ */
+function composed_field_format_validate($element, &$form_state, $form) {
+  if ($element['#value'] == 'full_html') {
+    drupal_set_message(t('Using the "Full HTML" format allows HTML to be posted unfiltered. This could represent a severe security risk.<br/>See !link for further information.', array('!link' => '<a href="http://drupal.org/documentation/modules/filter">http://drupal.org/documentation/modules/filter</a>')), 'warning', FALSE);
+  }
 }
 
 /**

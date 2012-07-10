@@ -2,8 +2,8 @@
 /**
  * @file
  * Defines an associative array of Form Controls structure.
- * @see
- * http://api.drupal.org/api/drupal/developer!topics!forms_api_reference.html/7
+ * 
+ * @see http://api.drupal.org/api/drupal/developer!topics!forms_api_reference.html/7
  */
 
 $description_options = '<p>' . t('The possible values this field can contain. Enter one value per line, in the format key|label.');
@@ -603,7 +603,7 @@ $form_controls = array(
       'value' => array(
         '#type' => 'textfield',
         '#description' => t("A positive or negative number (integer or decimal)."),
-        '#element_validate' => 'element_validate_number',
+        '#element_validate' => array('element_validate_number'),
       ),
     ),
     'supported_types' => array(
