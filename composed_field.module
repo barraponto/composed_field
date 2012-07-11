@@ -666,6 +666,7 @@ function composed_field_field_formatter_settings_form($field, $instance, $view_m
       $element['table'] = array(
         '#title' => t('Table'),
         '#type' => 'fieldset',
+        '#element_validate' => array('_composed_field_formatter_info_serialize_table_column_label'),
         '#collapsible' => TRUE,
         '#collapsed' => TRUE,
       );
@@ -685,6 +686,10 @@ function composed_field_field_formatter_settings_form($field, $instance, $view_m
             '#number_column' => array('checked' => TRUE),
           ),
         ),
+      );
+
+      $element['table']['column_label'] = array(
+        '#type' => 'hidden',
       );
 
       $column_label = unserialize($settings['table']['column_label']);
@@ -766,6 +771,34 @@ function composed_field_field_formatter_settings_form($field, $instance, $view_m
   }
 
   return $element;
+}
+
+/**
+ * Element validate callback.
+ *
+ * Serializes the column label values.
+ */
+function _composed_field_formatter_info_serialize_table_column_label($element, &$form_state, $form) {
+  $field_name = $element['#parents'][1];
+  $subfield = $element['#parents'][4];
+  $submitted_values = $form_state['values']['fields'][$field_name]['settings_edit_form']['settings'];
+  $submitted_column_labels = $submitted_values['table']['column_label'][$subfield];
+
+  $number_of_subfields = $submitted_values['number_of_subfields'];
+
+  foreach ($submitted_column_labels as $display_option => $display_option_value) {
+    [$display_option][$subfield] = $display_option_value;
+  }
+  $form_state['values']['fields'][$field_name]['settings_edit_form']['settings']['table']['column_label']
+  // Serialize the values for hidden, format, prefix and suffix.
+  if ($number_of_subfields == $subfield) {
+    $display_options = $form_state['values']['fields'][$field_name]['settings_edit_form']['settings']['display_options'];
+
+    foreach ($display_options as $display_option => $display_option_values) {
+      $display_options[$display_option] = serialize($display_option_values);
+    }
+    $form_state['values']['fields'][$field_name]['settings_edit_form']['settings']['display_options'] = $display_options;
+  }
 }
 
 /**
@@ -926,18 +959,32 @@ function composed_field_field_formatter_view($entity_type, $entity, $field, $ins
         if ($settings['table']['number_column']) {
           $row[] = ++$delta;
         }
-        $row[] = $item['first'];
-        $row[] = $item['second'];
+        foreach ($item as $subfield => $subfield_value) {
+          $row[] = $item[$subfield];  
+        }
         $rows[] = $row;
       }
       $header = array();
-      if ($settings['table']['first']['column_label'] || $settings['table']['second']['column_label']) {
-        if ($settings['table']['number_column']) {
-          $header[] = t('№');
-        }
-        $header[] = $settings['table']['first']['column_label'];
-        $header[] = $settings['table']['second']['column_label'];
+      if (unserialize($settings['table']['column_label']) !== FALSE) {
+        $settings['table']['column_label'] = unserialize($settings['table']['column_label']);
       }
+      else {
+        $settings['table']['column_label'] = array();
+
+        for ($subfield = 1;
+             $subfield <= $number_of_subfields;
+             $subfield++) {
+          $settings['table']['column_label'][$subfield] = '';
+        }
+      }
+      foreach ($settings['table']['column_label'] as $subfield => $subfield_value) {
+        if ($settings['table']['column_label'][$subfield]) {
+          if ($settings['table']['number_column']) {
+            $header[] = t('№');
+          }
+          $header[] = $settings['table']['column_label'][$subfield];
+        }
+      };
 
       // Display all values in a single element.
       $element[0] = array(
@@ -993,9 +1040,26 @@ function composed_field_field_formatter_settings_summary($field, $instance, $vie
       break;
 
     case 'composed_field_table':
+
+      if (unserialize($settings['table']['column_label']) !== FALSE) {
+        $settings['table']['column_label'] = unserialize($settings['table']['column_label']);
+      }
+      else {
+        $settings['table']['column_label'] = array();
+
+        for ($subfield = 1;
+             $subfield <= $number_of_subfields;
+             $subfield++) {
+          $settings['table']['column_label'][$subfield] = '';
+        }
+      }
+
       $summary .= '<div>' . t('Row number column: <em>@value</em>', array('@value' => $settings['table']['number_column'] ? 'Yes' : 'No')) . '</div>';
-      $summary .= '<div>' . t('First column label: <em>@value</em>', array('@value' => $settings['table'][1]['column_label'])) . '</div>';
-      $summary .= '<div>' . t('Second column label: <em>@value</em>', array('@value' => $settings['table'][$number_of_subfields]['column_label'])) . '</div>';
+
+      foreach ($settings['table']['column_label'] as $subfield => $subfield_value) {
+        $summary .= '<div>' . t("Subfield $subfield column label: <em>@value</em>", array('@value' => $settings['table']['column_label'][$subfield])) . '</div>';
+      }
+
       break;
   }
 
