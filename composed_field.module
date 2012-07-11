@@ -328,7 +328,12 @@ function _composed_field_build_form_controls_in_vertical_tabs(&$form, $widget_fo
     // it.
     $tab_name = str_replace('#', '', $attribute_name);
 
-    $description = t('See !form_controls for more details.', array('!form_controls' => l(t('Form Controls !tab_name', array('!tab_name' => "#$tab_name")), "http://api.drupal.org/api/drupal/developer!topics!forms_api_reference.html/7#$tab_name", array('attributes' => array('target' => '_blank')))));
+    $description = t('See !form_controls for more details.', array(
+      '!form_controls' => l(t('Form Controls !tab_name',
+      array('!tab_name' => "#$tab_name")),
+      "http://api.drupal.org/api/drupal/developer!topics!forms_api_reference.html/7#$tab_name",
+      array('attributes' => array('target' => '_blank')))
+    ));
 
     if ($tab_name == 'default_value') {
       $description = t('The default value for this field, used when creating new content.');
