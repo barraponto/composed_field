@@ -328,11 +328,7 @@ function _composed_field_build_form_controls_in_vertical_tabs(&$form, $widget_fo
     // it.
     $tab_name = str_replace('#', '', $attribute_name);
 
-    $description = t('See !form_controls for more details.',
-      array('!form_controls' => l(t('Form Controls !tab_name', array('!tab_name' => "#$tab_name")),
-      "http://api.drupal.org/api/drupal/developer!topics!forms_api_reference.html/7#$tab_name",
-      array('attributes' => array('target' => '_blank'))))
-    );
+    $description = t('See !form_controls for more details.', array('!form_controls' => l(t('Form Controls !tab_name', array('!tab_name' => "#$tab_name")), "http://api.drupal.org/api/drupal/developer!topics!forms_api_reference.html/7#$tab_name", array('attributes' => array('target' => '_blank')))));
 
     if ($tab_name == 'default_value') {
       $description = t('The default value for this field, used when creating new content.');
@@ -787,9 +783,9 @@ function _composed_field_formatter_info_serialize_table_column_label($element, &
   $number_of_subfields = $submitted_values['number_of_subfields'];
 
   foreach ($submitted_column_labels as $display_option => $display_option_value) {
-    //$display_option][$subfield] = $display_option_value;
+    // $display_option][$subfield] = $display_option_value;
   }
-  //$form_state['values']['fields'][$field_name]['settings_edit_form']['settings']['table']['column_label']
+  // $form_state['values']['fields'][$field_name]['settings_edit_form']['settings']['table']['column_label']
   // Serialize the values for hidden, format, prefix and suffix.
   if ($number_of_subfields == $subfield) {
     $display_options = $form_state['values']['fields'][$field_name]['settings_edit_form']['settings']['display_options'];
@@ -797,7 +793,7 @@ function _composed_field_formatter_info_serialize_table_column_label($element, &
     foreach ($display_options as $display_option => $display_option_values) {
       $display_options[$display_option] = serialize($display_option_values);
     }
-    $form_state['values']['fields'][$field_name]['settings_edit_form']['settings']['display_options'] = $display_options;
+    // $form_state['values']['fields'][$field_name]['settings_edit_form']['settings']['display_options'] = $display_options;
   }
 }
 
@@ -960,7 +956,7 @@ function composed_field_field_formatter_view($entity_type, $entity, $field, $ins
           $row[] = ++$delta;
         }
         foreach ($item as $subfield => $subfield_value) {
-          $row[] = $item[$subfield];  
+          $row[] = $item[$subfield];
         }
         $rows[] = $row;
       }
@@ -1040,7 +1036,6 @@ function composed_field_field_formatter_settings_summary($field, $instance, $vie
       break;
 
     case 'composed_field_table':
-
       if (unserialize($settings['table']['column_label']) !== FALSE) {
         $settings['table']['column_label'] = unserialize($settings['table']['column_label']);
       }
@@ -1120,7 +1115,7 @@ function theme_composed_field_accordion($vars) {
   $output = '<div class="composed-field-accordion">';
   $value = '';
   foreach ($vars['element']['#items'] as $item) {
-    foreach($item as $subfield => $subfield_value) {
+    foreach ($item as $subfield => $subfield_value) {
       if ($subfield === 1) {
         $output .= '<h3><a href="#">' . $item[1] . '</a></h3>';
       }
@@ -1129,7 +1124,7 @@ function theme_composed_field_accordion($vars) {
       }
     }
   }
-  $output .= '<div>' . $value . '</div>'; 
+  $output .= '<div>' . $value . '</div>';
   $output .= '</div>';
   drupal_add_library('system', 'ui.accordion');
   drupal_add_js('jQuery(document).ready(function(){jQuery(".composed-field-accordion").accordion({ collapsible: true, active: false });});', 'inline');

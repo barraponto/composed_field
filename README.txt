@@ -19,14 +19,12 @@ Landline/Mobile (select options) | Country Code (select options) | Area Code
 
 The sub-fields values will be lumped together into an array like this:
 
-<?php
 array(
   [1] => 'landline', // Landline / Mobile sub-field.
   [2] => '55', // Country code  sub-field.
   [3] => '66', // Area code  sub-field.
   [4] => '3521-5555', // Number  sub-field.
 );
-?>
 
 After that the array is serialized and stored into the database as a single
 value.
