@@ -787,9 +787,9 @@ function _composed_field_formatter_info_serialize_table_column_label($element, &
   $number_of_subfields = $submitted_values['number_of_subfields'];
 
   foreach ($submitted_column_labels as $display_option => $display_option_value) {
-    [$display_option][$subfield] = $display_option_value;
+    //$display_option][$subfield] = $display_option_value;
   }
-  $form_state['values']['fields'][$field_name]['settings_edit_form']['settings']['table']['column_label']
+  //$form_state['values']['fields'][$field_name]['settings_edit_form']['settings']['table']['column_label']
   // Serialize the values for hidden, format, prefix and suffix.
   if ($number_of_subfields == $subfield) {
     $display_options = $form_state['values']['fields'][$field_name]['settings_edit_form']['settings']['display_options'];
