@@ -186,8 +186,7 @@ function composed_field_field_widget_form(&$form, &$form_state, $field, $instanc
     $element['composed'][$subfield] = _composed_field_build_subfield_element($settings, $subfield, $default_value);
   }
 
-  if (isset($settings['inline']) &&
-      $settings['inline']) {
+  if (isset($settings['inline']) && $settings['inline']) {
     $prefix = (isset($element['composed'][1]['#prefix'])) ? $element['composed'][1]['#prefix'] : '';
     $suffix = (isset($element['composed'][$number_of_subfields]['#suffix'])) ? $element['composed'][$number_of_subfields]['#suffix'] : '';
 
@@ -332,7 +331,7 @@ function _composed_field_build_form_controls_in_vertical_tabs(&$form, $widget_fo
       '!form_controls' => l(t('Form Controls !tab_name',
       array('!tab_name' => "#$tab_name")),
       "http://api.drupal.org/api/drupal/developer!topics!forms_api_reference.html/7#$tab_name",
-      array('attributes' => array('target' => '_blank')))
+      array('attributes' => array('target' => '_blank'))),
     ));
 
     if ($tab_name == 'default_value') {

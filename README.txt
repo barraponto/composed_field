@@ -5,6 +5,18 @@ You can configure each sub-field attributes as they were literally a single
 field.
 All the Form Controls are configurable through the Field Widget Form.
 
+--- Features ---
+
+* Each sub-field element type can be individually set to:
+
+  checkbox, checkboxes, date, fieldset, file, machine_name, managed_file,
+  password, password_confirm, radio, radios, select, tableselect, text_format,
+  textarea, textfield, vertical_tabs, weight.
+
+* The following field display settings are available:
+
+  Unformatted list, Fieldset, HTML list, Table, Accordion, Tabs, Dialog
+
 --- How does it work? ---
 
 Each field stores its value as a serialized array into the database. Each array
