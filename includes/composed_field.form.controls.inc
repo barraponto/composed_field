@@ -171,6 +171,7 @@ $form_controls = array(
         '#field_suffix' => '<b>' . t('Make it required') . '</b>',
         '#title' => t('Required') . ' ',
         '#title_display' => 'before',
+        '#default_value' => TRUE,
       ),
     ),
     'supported_types' => array(
@@ -220,6 +221,7 @@ $form_controls = array(
       'value' => array(
         '#type' => 'checkbox',
         '#title' => t('Make it unaccessable for') . ' ',
+        '#default_value' => TRUE,
       ),
     ),
     'supported_types' => array(
@@ -547,6 +549,7 @@ $form_controls = array(
       'value' => array(
         '#type' => 'checkbox',
         '#title' => t('Make it TRUE for') . ' ',
+        '#default_value' => TRUE,
       ),
     ),
     'supported_types' => array(
@@ -691,6 +694,7 @@ $form_controls = array(
       'value' => array(
         '#type' => 'checkbox',
         '#title' => t('Make it TRUE for') . ' ',
+        '#default_value' => TRUE,
       ),
     ),
     'supported_types' => array(
@@ -781,6 +785,7 @@ $form_controls = array(
       'value' => array(
         '#type' => 'checkbox',
         '#title' => t('Make it TRUE for') . ' ',
+        '#default_value' => TRUE,
       ),
     ),
     'supported_types' => array('select','tableselect'),
@@ -800,6 +805,7 @@ $form_controls = array(
       'value' => array(
         '#type' => 'checkbox',
         '#title' => t('Make it resizable for') . ' ',
+        '#default_value' => TRUE,
       ),
     ),
     'supported_types' => array('text_format','textarea'),
@@ -828,6 +834,7 @@ $form_controls = array(
       'value' => array(
         '#type' => 'checkbox',
         '#title' => t('Make it collapsed for') . ' ',
+        '#default_value' => TRUE,
       ),
     ),
     'supported_types' => array('fieldset'),
@@ -837,6 +844,7 @@ $form_controls = array(
       'value' => array(
         '#type' => 'checkbox',
         '#title' => t('Make it collapsible for') . ' ',
+        '#default_value' => TRUE,
       ),
     ),
     'supported_types' => array('fieldset'),
@@ -895,6 +903,7 @@ $form_controls = array(
       'value' => array(
         '#type' => 'checkbox',
         '#title' => t('Make it TRUE for') . ' ',
+        '#default_value' => TRUE,
       ),
     ),
     'supported_types' => array('tableselect'),
