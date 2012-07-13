@@ -80,14 +80,14 @@ function composed_field_form_field_ui_field_edit_form_alter(&$form, &$form_state
   // submitted.
   if ($form['#field']['type'] == 'composed_field' &&
       isset($form_state['values']['instance']['widget']['settings'])) {
-    
+
     $tab_trigger = $form_state['triggering_element']['#parents'][4];
     $tab_subfield_trigger = $form_state['triggering_element']['#parents'][5];
-    
+
     $form_controls = _composed_field_form_controls_api();
 
     if (isset($form_controls["#$tab_trigger"]['widget_form']['value']['#default_value'])) {
-      $form_state['values']['instance']['widget']['settings']['composed_field'][$tab_trigger][$tab_subfield_trigger]['value'] =
+      $form_state['values']['instance']['widget']['settings']['composed_field'][$tab_trigger][$tab_subfield_trigger]['value'] = 
       $form_controls["#$tab_trigger"]['widget_form']['value']['#default_value'];
     }
 
