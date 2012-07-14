@@ -175,12 +175,10 @@ function _composed_field_vertical_tabs_ajax_callback($form, $form_state) {
   $wrapper = '#composed_field_tabs_ajax_wrapper';
   $render = $form_widget['composed_field'];
 
-  if (isset($trigger[4])) {
-    // $trigger[4] is the tab element (form control attribute name).
-    if ($trigger[4] != 'type') {
-      $wrapper = '#composed_field_' . $trigger[4] . '-' . $trigger[5] . '_ajax_wrapper';
-      $render = $form_widget['composed_field'][$trigger[4]][$trigger[5]];
-    }
+  // $trigger[4] is the tab element (form control attribute name).
+  if (isset($trigger[4]) && $trigger[4] != 'type') {
+    $wrapper = '#composed_field_' . $trigger[4] . '-' . $trigger[5] . '_ajax_wrapper';
+    $render = $form_widget['composed_field'][$trigger[4]][$trigger[5]];
   }
   return array(
     '#type' => 'ajax',
