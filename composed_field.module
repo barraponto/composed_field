@@ -81,12 +81,14 @@ function composed_field_form_field_ui_field_edit_form_alter(&$form, &$form_state
   if ($form['#field']['type'] == 'composed_field' &&
       isset($form_state['values']['instance']['widget']['settings'])) {
 
+    // Identify which element triggered the ajax callback.
     $tab_trigger = $form_state['triggering_element']['#parents'][4];
     $tab_subfield_trigger = $form_state['triggering_element']['#parents'][5];
 
     $form_controls = _composed_field_form_controls_api();
 
     if (isset($form_controls["#$tab_trigger"]['widget_form']['value']['#default_value'])) {
+      // Set the default value for the attribute element related to the triggering element.
       $form_state['values']['instance']['widget']['settings']['composed_field'][$tab_trigger][$tab_subfield_trigger]['value'] = $form_controls["#$tab_trigger"]['widget_form']['value']['#default_value'];
     }
 
@@ -168,11 +170,21 @@ function composed_field_field_widget_settings_form($field, $instance) {
  */
 function _composed_field_vertical_tabs_ajax_callback($form, $form_state) {
   $form_widget = $form['instance']['widget']['settings'];
+  $trigger = $form_state['triggering_element']['#parents'];
+  $wrapper = '#composed_field_tabs_ajax_wrapper';
+  $render = $form_widget['composed_field'];
 
+  if (isset($trigger[4])) {
+    // $trigger[4] is the tab element (form control attribute name).
+    if ($trigger[4] != 'type') {
+      $wrapper = '#composed_field_' . $trigger[4] . '-' . $trigger[5] . '_ajax_wrapper';
+      $render = $form_widget['composed_field'][$trigger[4]][$trigger[5]];
+    }
+  }
   return array(
     '#type' => 'ajax',
     '#commands' => array(
-      ajax_command_replace("#composed_field_tabs_ajax_wrapper", render($form_widget['composed_field'])),
+      ajax_command_replace($wrapper, render($render)),
     ),
   );
 }
@@ -459,6 +471,11 @@ function _composed_field_build_vertical_tab_elements(&$form, $widget_form_state_
             ),
           );
       }
+
+      $form['composed_field'][$tab_name][$subfield] += array(
+        '#prefix' => "<div id='composed_field_" . "$tab_name-$subfield" ."_ajax_wrapper'>",
+        '#suffix' => '</div>',
+      );
 
       $form['composed_field'][$tab_name][$subfield][$form_element] = $form_element_properties;
     }

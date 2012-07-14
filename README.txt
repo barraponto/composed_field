@@ -1,8 +1,8 @@
 Composed Field is an implementation of core's Field UI that allows you to split
 a single field into as many sub-fields as you like.
 
-You can configure each sub-field attributes as they were literally a single
-field.
+You can configure each sub-field types and attributes as they were literally a
+single field.
 All the Form Controls are configurable through the Field Widget Form.
 
 --- Features ---
@@ -15,7 +15,7 @@ All the Form Controls are configurable through the Field Widget Form.
 
 * The following field display settings are available:
 
-  Unformatted list, Fieldset, HTML list, Table, Accordion, Tabs, Dialog
+  Unformatted list (Default), Fieldset, HTML list, Table, Accordion, Tabs, Dialog
 
 --- How does it work? ---
 
