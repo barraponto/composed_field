@@ -88,7 +88,8 @@ function composed_field_form_field_ui_field_edit_form_alter(&$form, &$form_state
     $form_controls = _composed_field_form_controls_api();
 
     if (isset($form_controls["#$tab_trigger"]['widget_form']['value']['#default_value'])) {
-      // Set the default value for the attribute element related to the triggering element.
+      // Set the default value for the attribute element related to the
+      // triggering element.
       $form_state['values']['instance']['widget']['settings']['composed_field'][$tab_trigger][$tab_subfield_trigger]['value'] = $form_controls["#$tab_trigger"]['widget_form']['value']['#default_value'];
     }
 
@@ -473,7 +474,7 @@ function _composed_field_build_vertical_tab_elements(&$form, $widget_form_state_
       }
 
       $form['composed_field'][$tab_name][$subfield] += array(
-        '#prefix' => "<div id='composed_field_" . "$tab_name-$subfield" ."_ajax_wrapper'>",
+        '#prefix' => "<div id='composed_field_" . "$tab_name-$subfield" . "_ajax_wrapper'>",
         '#suffix' => '</div>',
       );
 
