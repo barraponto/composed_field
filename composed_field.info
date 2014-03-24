@@ -2,3 +2,5 @@ name = Composed Field
 description = Defines composed field types
 package = Fields
 core = 7.x
+
+files[] = includes/views/handlers/composed_field_handler_field_composed_field.inc
