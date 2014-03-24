@@ -900,9 +900,11 @@ function composed_field_field_formatter_view($entity_type, $entity, $field, $ins
           ? $item[$subfield] : $allowed_values[$item[$subfield]];
         }
 
-        $item[$subfield] = $display_options['format'][$subfield] == '_none'
-        ? check_plain($item[$subfield])
-        : check_markup($item[$subfield], $display_options['format'][$subfield]);
+        if (!empty($display_options['format'][$subfield]) && $display_options['format'][$subfield] != '_none') {
+          $item[$subfield] = check_markup($item[$subfield], $display_options['format'][$subfield]);
+        } else {
+          $item[$subfield] = check_plain($item[$subfield]);
+        }
 
         // Do not display prefix and suffix for empty subfields.
         $item[$subfield] = $display_options['prefix'][$subfield] . $item[$subfield] . $display_options['suffix'][$subfield];
